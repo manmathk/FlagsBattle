@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FlagsBattle</title>
+    <meta
+      name="description"
+      content="A live physics battle royale between the flags of the world. Three modes, fourteen arenas, one survivor."
+    />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='13'>🏁</text></svg>" />
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+
+    <div id="hud" aria-live="polite">
+      <div class="hud-row hud-top">
+        <div class="badge" id="mode-badge">Normal</div>
+        <div class="badge" id="alive-badge">—</div>
+      </div>
+
+      <div class="strip" id="results">
+        <div class="strip-block" id="last-round" hidden>
+          <span class="strip-label">Last</span>
+          <span class="flag-chip" id="last-winner-chip"></span>
+          <span class="strip-name" id="last-winner-name"></span>
+        </div>
+
+        <div class="strip-block">
+          <span class="strip-label" id="top-title">Top 5</span>
+          <ol class="strip-list" id="top-list">
+            <li class="strip-empty">No rounds yet</li>
+          </ol>
+        </div>
+
+        <div class="strip-block" id="series-block" hidden>
+          <span class="strip-label">Series</span>
+          <ol class="strip-list" id="series-list"></ol>
+        </div>
+      </div>
+
+      <div class="event-label" id="event-label" hidden></div>
+      <div class="banner" id="banner" hidden></div>
+    </div>
+
+    <div id="controls">
+      <button type="button" id="play" class="control" aria-keyshortcuts="Space">Pause</button>
+      <button type="button" id="reset" class="control" aria-keyshortcuts="R">Reset</button>
+      <button
+        type="button"
+        id="sound"
+        class="control control-icon"
+        aria-keyshortcuts="M"
+        aria-label="Unmute"
+      >
+        🔇
+      </button>
+      <label class="control select">
+        <span class="select-label">Mode</span>
+        <select id="mode"></select>
+      </label>
+      <label class="control select">
+        <span class="select-label">Arena</span>
+        <select id="theme"></select>
+      </label>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
