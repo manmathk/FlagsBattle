@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#070b24" />
+  <title>🌍 Where Are You From? — Live Flag Battle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="aurora aurora-a"></div><div class="aurora aurora-b"></div><div class="stars"></div>
+  <main class="stage">
+    <header class="hero">
+      <div class="earth">🌍</div>
+      <div class="hero-copy"><div class="eyebrow"><span class="live-dot"></span> LIVE COUNTRY BATTLE</div><h1>WHERE ARE YOU <span>FROM?</span></h1><p>Type your country in the YouTube chat and push your flag to #1.</p></div>
+      <div class="emoji">🤩</div>
+    </header>
+    <section class="battle-card" aria-label="Current leader battle"><div class="battle-label">🔥 THE RACE FOR #1</div><div class="battle-grid"><div class="battle-side" id="battleA"></div><div class="vs">VS</div><div class="battle-side" id="battleB"></div></div><div class="difference" id="difference">Waiting for votes…</div></section>
+    <section class="leaderboard-shell">
+      <div class="section-title"><div><span class="pulse-ring"></span> LIVE LEADERBOARD</div><span id="statusPill" class="status-pill">CONNECTING</span></div>
+      <div id="leaderboard" class="leaderboard" aria-live="polite"></div>
+    </section>
+    <footer class="footer"><div class="how"><strong>HOW TO PLAY</strong><span>1️⃣ Type your country</span><span>2️⃣ Or type its number</span><span>3️⃣ Watch it climb 🚀</span></div><div class="stats"><div><b id="totalVotes">0</b><small>LIVE VOTES</small></div><div><b id="countryCount">195</b><small>COUNTRIES</small></div><div><b id="uniqueVoters">0</b><small>VOTERS</small></div></div></footer>
+  </main>
+  <div id="voteToast" class="vote-toast" aria-live="assertive"></div>
+  <div id="demoPanel" class="demo-panel hidden"><div class="demo-head"><strong>DEMO VOTING</strong><button id="closeDemo">×</button></div><input id="demoSearch" placeholder="Search a country…" autocomplete="off" /><div id="demoCountries" class="demo-countries"></div></div>
+  <script src="/socket.io/socket.io.js"></script><script type="module" src="/app.js"></script>
+</body>
+</html>
