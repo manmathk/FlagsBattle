@@ -4,6 +4,7 @@ const socket = io({ transports: ['websocket', 'polling'] });
 const $ = (id) => document.getElementById(id);
 const leaderboardEl = $('leaderboard');
 const toastEl = $('voteToast');
+const winnerToastEl = $('winnerToast');
 const statusPill = $('statusPill');
 const battleA = $('battleA');
 const battleB = $('battleB');
@@ -11,12 +12,60 @@ const difference = $('difference');
 const totalVotesEl = $('totalVotes');
 const uniqueVotersEl = $('uniqueVoters');
 const countryCountEl = $('countryCount');
+const voiceToggle = $('voiceToggle');
 let lastRanks = new Map();
+let lastLeaderCode = null;
+let hasRenderedInitialState = false;
 let toastTimer = null;
+let winnerTimer = null;
+let voiceEnabled = false;
+let voices = [];
 
 function formatNumber(value) { return new Intl.NumberFormat('en-US').format(value || 0); }
 function countryFlag(country) { return country?.flag || '🌐'; }
 function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
+
+function loadVoicePreference() {
+  try { voiceEnabled = localStorage.getItem('flagsbattle-voice') === 'on'; } catch {}
+  updateVoiceButton();
+}
+function updateVoiceButton() {
+  if (!voiceToggle) return;
+  voiceToggle.textContent = voiceEnabled ? '🔊 VOICE ON' : '🔇 VOICE OFF';
+  voiceToggle.classList.toggle('active', voiceEnabled);
+  voiceToggle.setAttribute('aria-pressed', String(voiceEnabled));
+}
+function loadVoices() {
+  if (!('speechSynthesis' in window)) return;
+  voices = window.speechSynthesis.getVoices();
+}
+function chooseVoice() {
+  const english = voices.filter((voice) => /^en(-|_)/i.test(voice.lang));
+  return english.find((voice) => /Google|Microsoft|Samantha|Daniel|Karen|Alex/i.test(voice.name)) || english[0] || voices[0];
+}
+function speakWinner(country) {
+  if (!voiceEnabled || !country || !('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const message = `New number one! ${country.name} is now in first place!`;
+  const utterance = new SpeechSynthesisUtterance(message);
+  utterance.lang = 'en-US';
+  utterance.rate = 0.9;
+  utterance.pitch = 1.03;
+  utterance.volume = 1;
+  const voice = chooseVoice();
+  if (voice) utterance.voice = voice;
+  window.speechSynthesis.speak(utterance);
+}
+function announceWinner(country) {
+  if (!country) return;
+  winnerToastEl.innerHTML = `<span class="winner-crown">🏆</span><div><small>NEW #1</small><b>${countryFlag(country)} ${escapeHtml(country.name)}</b><em>TAKES THE LEAD!</em></div>`;
+  winnerToastEl.classList.remove('show');
+  void winnerToastEl.offsetWidth;
+  winnerToastEl.classList.add('show');
+  clearTimeout(winnerTimer);
+  winnerTimer = setTimeout(() => winnerToastEl.classList.remove('show'), 4200);
+  speakWinner(country);
+}
 
 function renderBattle(rows) {
   const a = rows[0], b = rows[1];
@@ -53,14 +102,24 @@ function renderLeaderboard(rows) {
 }
 
 function render(state) {
-  renderBattle(state.leaderboard);
-  renderLeaderboard(state.leaderboard);
+  const rows = state.leaderboard || [];
+  const newLeader = rows[0];
+  renderBattle(rows);
+  renderLeaderboard(rows);
   totalVotesEl.textContent = formatNumber(state.totalVotes);
   uniqueVotersEl.textContent = formatNumber(state.uniqueVoters);
   countryCountEl.textContent = formatNumber(state.countryCount);
   const connected = state.youtube?.live || state.youtube?.connected;
   statusPill.textContent = state.youtube?.live ? 'YOUTUBE LIVE' : connected ? 'SERVER READY' : 'DEMO / OFFLINE';
   statusPill.className = `status-pill ${state.youtube?.live ? 'good' : connected ? 'warm' : 'neutral'}`;
+
+  // Only announce a leader change after the initial state has been rendered.
+  // This prevents a 24/7 stream from announcing the saved historical leader on startup.
+  if (hasRenderedInitialState && newLeader && newLeader.code !== lastLeaderCode) {
+    announceWinner(newLeader);
+  }
+  if (newLeader) lastLeaderCode = newLeader.code;
+  hasRenderedInitialState = true;
 }
 
 function showVote(vote) {
@@ -72,6 +131,28 @@ function showVote(vote) {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2300);
 }
+
+voiceToggle?.addEventListener('click', () => {
+  voiceEnabled = !voiceEnabled;
+  try { localStorage.setItem('flagsbattle-voice', voiceEnabled ? 'on' : 'off'); } catch {}
+  updateVoiceButton();
+  if (voiceEnabled && 'speechSynthesis' in window) {
+    loadVoices();
+    const test = new SpeechSynthesisUtterance('Voice announcements are on.');
+    test.lang = 'en-US';
+    test.rate = 0.95;
+    const voice = chooseVoice();
+    if (voice) test.voice = voice;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(test);
+  } else if ('speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+});
+
+loadVoicePreference();
+loadVoices();
+if ('speechSynthesis' in window) window.speechSynthesis.onvoiceschanged = loadVoices;
 
 socket.on('connect', () => { statusPill.textContent = 'CONNECTED'; statusPill.className = 'status-pill good'; });
 socket.on('disconnect', () => { statusPill.textContent = 'RECONNECTING'; statusPill.className = 'status-pill warm'; });
