@@ -60,6 +60,9 @@ async function persistScores() {
 function leaderboard(limit = 10) {
   return COUNTRIES.map((country) => ({ ...country, score: state.scores[country.code] || 0 })).sort((a, b) => b.score - a.score || a.number - b.number).slice(0, limit);
 }
+function allCountries() {
+  return COUNTRIES.map((country) => ({ ...country, score: state.scores[country.code] || 0 })).sort((a, b) => b.score - a.score || a.number - b.number);
+}
 function snapshot() {
   return { leaderboard: leaderboard(10), totalVotes: state.totalVotes, uniqueVoters: state.uniqueVoters, acceptedVotes: state.acceptedVotes, rejectedVotes: state.rejectedVotes, countryCount: COUNTRIES.length, lastVote: state.lastVote, youtube: state.youtube };
 }
@@ -118,7 +121,6 @@ async function pollYoutube() {
   let broadcastId = null;
   while (!youtubeStopRequested) {
     try {
-      // Resolve the broadcast only when there is no active chat ID. This avoids wasting API quota on every chat poll.
       if (!liveChatId) {
         const live = await findLiveChatId(youtube);
         if (!live) {
@@ -186,6 +188,7 @@ function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
 function startYoutubeLoop() { if (youtubeLoopRunning) return; youtubeLoopRunning = true; youtubeStopRequested = false; pollYoutube().finally(() => { youtubeLoopRunning = false; }); }
 
 app.get('/api/state', (_req, res) => res.json(snapshot()));
+app.get('/api/all-state', (_req, res) => res.json({ countries: allCountries(), totalVotes: state.totalVotes, uniqueVoters: state.uniqueVoters, countryCount: COUNTRIES.length, lastVote: state.lastVote, youtube: state.youtube }));
 app.get('/api/health', (_req, res) => res.json({ ok: true, uptime: process.uptime(), youtube: state.youtube }));
 app.get('/api/config', (_req, res) => res.json({ demoMode: DEMO_MODE, cooldownMs: COOLDOWN_MS, countryCount: COUNTRIES.length, youtubeConfigured: hasYoutubeCredentials() }));
 app.post('/api/demo-vote', (req, res) => {
