@@ -18,15 +18,20 @@ let lastLeaderCode = null;
 let hasRenderedInitialState = false;
 let toastTimer = null;
 let winnerTimer = null;
-let voiceEnabled = false;
+let voiceEnabled = true;
 let voices = [];
+let audioUnlocked = false;
+let speechQueue = Promise.resolve();
 
 function formatNumber(value) { return new Intl.NumberFormat('en-US').format(value || 0); }
 function countryFlag(country) { return country?.flag || '🌐'; }
 function escapeHtml(value) { return String(value).replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c])); }
 
 function loadVoicePreference() {
-  try { voiceEnabled = localStorage.getItem('flagsbattle-voice') === 'on'; } catch {}
+  try {
+    const saved = localStorage.getItem('flagsbattle-voice');
+    voiceEnabled = saved !== 'off';
+  } catch { voiceEnabled = true; }
   updateVoiceButton();
 }
 function updateVoiceButton() {
@@ -43,19 +48,63 @@ function chooseVoice() {
   const english = voices.filter((voice) => /^en(-|_)/i.test(voice.lang));
   return english.find((voice) => /Google|Microsoft|Samantha|Daniel|Karen|Alex/i.test(voice.name)) || english[0] || voices[0];
 }
-function speakWinner(country) {
-  if (!voiceEnabled || !country || !('speechSynthesis' in window)) return;
-  window.speechSynthesis.cancel();
-  const message = `New number one! ${country.name} is now in first place!`;
-  const utterance = new SpeechSynthesisUtterance(message);
-  utterance.lang = 'en-US';
-  utterance.rate = 0.9;
-  utterance.pitch = 1.03;
-  utterance.volume = 1;
-  const voice = chooseVoice();
-  if (voice) utterance.voice = voice;
-  window.speechSynthesis.speak(utterance);
+
+function fallbackSpeech(text) {
+  if (!('speechSynthesis' in window)) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.88;
+      utterance.pitch = 1.02;
+      utterance.volume = 1;
+      const voice = chooseVoice();
+      if (voice) utterance.voice = voice;
+      utterance.onend = () => resolve(true);
+      utterance.onerror = () => resolve(false);
+      window.speechSynthesis.speak(utterance);
+    } catch { resolve(false); }
+  });
 }
+
+function remoteTts(text) {
+  // StreamElements provides an MP3 speech endpoint. Using an actual audio file
+  // makes the announcement much more reliable in OBS Browser Source than
+  // relying only on SpeechSynthesis/CEF voices.
+  const url = `https://api.streamelements.com/kappa/v2/speech?voice=Brian&text=${encodeURIComponent(text)}`;
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    audio.preload = 'auto';
+    audio.volume = 1;
+    let settled = false;
+    const finish = (ok) => { if (!settled) { settled = true; resolve(ok); } };
+    audio.onended = () => finish(true);
+    audio.onerror = () => finish(false);
+    audio.onabort = () => finish(false);
+    audio.src = url;
+    const play = audio.play();
+    if (play?.catch) play.catch(() => finish(false));
+    setTimeout(() => finish(false), 12000);
+  });
+}
+
+function speakWinner(country) {
+  if (!voiceEnabled || !country) return;
+  const message = `New number one! ${country.name} is now in first place!`;
+  speechQueue = speechQueue.then(async () => {
+    if (!voiceEnabled) return;
+    const remoteWorked = await remoteTts(message);
+    if (!remoteWorked) await fallbackSpeech(message);
+  }).catch(() => {});
+}
+
+function unlockVoice() {
+  audioUnlocked = true;
+  if ('speechSynthesis' in window) loadVoices();
+  updateVoiceButton();
+}
+
 function announceWinner(country) {
   if (!country) return;
   winnerToastEl.innerHTML = `<span class="winner-crown">🏆</span><div><small>NEW #1</small><b>${countryFlag(country)} ${escapeHtml(country.name)}</b><em>TAKES THE LEAD!</em></div>`;
@@ -113,11 +162,7 @@ function render(state) {
   statusPill.textContent = state.youtube?.live ? 'YOUTUBE LIVE' : connected ? 'SERVER READY' : 'DEMO / OFFLINE';
   statusPill.className = `status-pill ${state.youtube?.live ? 'good' : connected ? 'warm' : 'neutral'}`;
 
-  // Only announce a leader change after the initial state has been rendered.
-  // This prevents a 24/7 stream from announcing the saved historical leader on startup.
-  if (hasRenderedInitialState && newLeader && newLeader.code !== lastLeaderCode) {
-    announceWinner(newLeader);
-  }
+  if (hasRenderedInitialState && newLeader && newLeader.code !== lastLeaderCode) announceWinner(newLeader);
   if (newLeader) lastLeaderCode = newLeader.code;
   hasRenderedInitialState = true;
 }
@@ -135,20 +180,19 @@ function showVote(vote) {
 voiceToggle?.addEventListener('click', () => {
   voiceEnabled = !voiceEnabled;
   try { localStorage.setItem('flagsbattle-voice', voiceEnabled ? 'on' : 'off'); } catch {}
+  unlockVoice();
   updateVoiceButton();
-  if (voiceEnabled && 'speechSynthesis' in window) {
-    loadVoices();
-    const test = new SpeechSynthesisUtterance('Voice announcements are on.');
-    test.lang = 'en-US';
-    test.rate = 0.95;
-    const voice = chooseVoice();
-    if (voice) test.voice = voice;
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(test);
+  if (voiceEnabled) {
+    speechQueue = speechQueue.then(() => remoteTts('Voice announcements are on.')).then((ok) => ok || fallbackSpeech('Voice announcements are on.')).catch(() => {});
   } else if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
   }
 });
+
+// Any interaction unlocks audio for browsers/OBS configurations that require
+// a user gesture before playing remote audio.
+document.addEventListener('pointerdown', unlockVoice, { once: true, passive: true });
+document.addEventListener('keydown', unlockVoice, { once: true, passive: true });
 
 loadVoicePreference();
 loadVoices();
@@ -173,6 +217,7 @@ function renderDemoCountries() {
   demoCountries.innerHTML = COUNTRIES.filter((c) => !query || c.name.toLowerCase().includes(query) || c.code.toLowerCase() === query || String(c.number) === query).slice(0, 80)
     .map((c) => `<button data-code="${c.code}">${c.flag} <span>${escapeHtml(c.name)}</span><small>#${c.number}</small></button>`).join('');
   demoCountries.querySelectorAll('button').forEach((button) => button.addEventListener('click', async () => {
+    unlockVoice();
     button.disabled = true;
     await fetch('/api/demo-vote', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ country: button.dataset.code }) });
     setTimeout(() => { button.disabled = false; }, 150);
