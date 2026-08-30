@@ -52,46 +52,24 @@ async function loadScores() {
     await persistScores();
   }
 }
-
-function scheduleSave() {
-  if (saveTimer) return;
-  saveTimer = setTimeout(async () => { saveTimer = null; await persistScores(); }, 500);
-}
-
+function scheduleSave() { if (saveTimer) return; saveTimer = setTimeout(async () => { saveTimer = null; await persistScores(); }, 500); }
 async function persistScores() {
   await fs.mkdir(DATA_DIR, { recursive: true });
   await fs.writeFile(SCORES_FILE, JSON.stringify({ version: 1, updatedAt: new Date().toISOString(), scores: state.scores, totalVotes: state.totalVotes, acceptedVotes: state.acceptedVotes }, null, 2));
 }
-
 function leaderboard(limit = 10) {
-  return COUNTRIES.map((country) => ({ ...country, score: state.scores[country.code] || 0 }))
-    .sort((a, b) => b.score - a.score || a.number - b.number)
-    .slice(0, limit);
+  return COUNTRIES.map((country) => ({ ...country, score: state.scores[country.code] || 0 })).sort((a, b) => b.score - a.score || a.number - b.number).slice(0, limit);
 }
-
 function snapshot() {
-  return {
-    leaderboard: leaderboard(10),
-    totalVotes: state.totalVotes,
-    uniqueVoters: state.uniqueVoters,
-    acceptedVotes: state.acceptedVotes,
-    rejectedVotes: state.rejectedVotes,
-    countryCount: COUNTRIES.length,
-    lastVote: state.lastVote,
-    youtube: state.youtube
-  };
+  return { leaderboard: leaderboard(10), totalVotes: state.totalVotes, uniqueVoters: state.uniqueVoters, acceptedVotes: state.acceptedVotes, rejectedVotes: state.rejectedVotes, countryCount: COUNTRIES.length, lastVote: state.lastVote, youtube: state.youtube };
 }
 function emitSnapshot() { io.emit('state', snapshot()); }
-
 function acceptVote(country, voterId, source = 'youtube') {
   if (!country) return { ok: false, reason: 'unknown-country' };
   const now = Date.now();
   if (voterId) {
     const last = cooldowns.get(voterId) || 0;
-    if (now - last < COOLDOWN_MS) {
-      state.rejectedVotes += 1;
-      return { ok: false, reason: 'cooldown' };
-    }
+    if (now - last < COOLDOWN_MS) { state.rejectedVotes += 1; return { ok: false, reason: 'cooldown' }; }
     cooldowns.set(voterId, now);
     if (!seenVoters.has(voterId)) { seenVoters.add(voterId); state.uniqueVoters += 1; }
   }
@@ -104,20 +82,14 @@ function acceptVote(country, voterId, source = 'youtube') {
   emitSnapshot();
   return { ok: true, country: state.lastVote.country, score: state.scores[country.code] };
 }
-
-function hasYoutubeCredentials() {
-  return Boolean(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET && process.env.YOUTUBE_REFRESH_TOKEN);
-}
-function oauthClient() {
-  return new google.auth.OAuth2(process.env.YOUTUBE_CLIENT_ID, process.env.YOUTUBE_CLIENT_SECRET, `${PUBLIC_URL.replace(/\/$/, '')}/oauth2/callback`);
-}
+function hasYoutubeCredentials() { return Boolean(process.env.YOUTUBE_CLIENT_ID && process.env.YOUTUBE_CLIENT_SECRET && process.env.YOUTUBE_REFRESH_TOKEN); }
+function oauthClient() { return new google.auth.OAuth2(process.env.YOUTUBE_CLIENT_ID, process.env.YOUTUBE_CLIENT_SECRET, `${PUBLIC_URL.replace(/\/$/, '')}/oauth2/callback`); }
 function youtubeClient() {
   if (!hasYoutubeCredentials()) return null;
   const auth = oauthClient();
   auth.setCredentials({ refresh_token: process.env.YOUTUBE_REFRESH_TOKEN });
   return google.youtube({ version: 'v3', auth });
 }
-
 async function findLiveChatId(youtube) {
   if (process.env.YOUTUBE_BROADCAST_ID) {
     const response = await youtube.liveBroadcasts.list({ part: 'id,snippet,status', id: [process.env.YOUTUBE_BROADCAST_ID] });
@@ -132,7 +104,6 @@ async function findLiveChatId(youtube) {
   if (!live) return null;
   return { broadcastId: live.id, liveChatId: live.snippet.liveChatId };
 }
-
 async function pollYoutube() {
   if (!hasYoutubeCredentials()) {
     state.youtube.connected = false;
@@ -147,18 +118,24 @@ async function pollYoutube() {
   let broadcastId = null;
   while (!youtubeStopRequested) {
     try {
-      const live = await findLiveChatId(youtube);
-      if (!live) {
-        state.youtube.connected = true;
-        state.youtube.live = false;
-        state.youtube.broadcastId = null;
-        state.youtube.liveChatId = null;
-        state.youtube.lastError = null;
-        emitSnapshot();
-        await sleep(5000);
-        continue;
+      // Resolve the broadcast only when there is no active chat ID. This avoids wasting API quota on every chat poll.
+      if (!liveChatId) {
+        const live = await findLiveChatId(youtube);
+        if (!live) {
+          state.youtube.connected = true;
+          state.youtube.live = false;
+          state.youtube.broadcastId = null;
+          state.youtube.liveChatId = null;
+          state.youtube.lastError = null;
+          state.youtube.nextPollMs = 15000;
+          emitSnapshot();
+          await sleep(15000);
+          continue;
+        }
+        liveChatId = live.liveChatId;
+        broadcastId = live.broadcastId;
+        pageToken = undefined;
       }
-      if (liveChatId !== live.liveChatId) { liveChatId = live.liveChatId; broadcastId = live.broadcastId; pageToken = undefined; }
       const response = await youtube.liveChatMessages.list({ liveChatId, part: 'id,snippet,authorDetails', maxResults: 2000, ...(pageToken ? { pageToken } : {}) });
       state.youtube.connected = true;
       state.youtube.live = true;
@@ -170,7 +147,7 @@ async function pollYoutube() {
         if (item.snippet?.type !== 'textMessageEvent') continue;
         const country = normalizeCountryInput(item.snippet?.displayMessage);
         if (!country) continue;
-        const voterId = item.authorDetails?.channelId || item.snippet?.channelId || item.id;
+        const voterId = item.authorDetails?.channelId || item.snippet?.authorChannelId || item.id;
         acceptVote(country, voterId, 'youtube');
       }
       pageToken = response.data.nextPageToken;
@@ -180,22 +157,33 @@ async function pollYoutube() {
       await sleep(wait);
     } catch (error) {
       const reason = error?.response?.data?.error?.message || error?.message || String(error);
-      state.youtube.connected = false;
-      state.youtube.live = false;
-      state.youtube.lastError = reason;
-      state.youtube.nextPollMs = 5000;
-      emitSnapshot();
-      await sleep(5000);
+      const lower = reason.toLowerCase();
+      const chatEnded = lower.includes('livechatended') || lower.includes('live chat has ended') || lower.includes('livechatnotfound') || lower.includes('live chat is not enabled');
+      if (chatEnded) {
+        liveChatId = null;
+        broadcastId = null;
+        pageToken = undefined;
+        state.youtube.connected = true;
+        state.youtube.live = false;
+        state.youtube.broadcastId = null;
+        state.youtube.liveChatId = null;
+        state.youtube.lastError = reason;
+        state.youtube.nextPollMs = 5000;
+        emitSnapshot();
+        await sleep(5000);
+      } else {
+        state.youtube.connected = false;
+        state.youtube.live = false;
+        state.youtube.lastError = reason;
+        state.youtube.nextPollMs = 30000;
+        emitSnapshot();
+        await sleep(30000);
+      }
     }
   }
 }
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
-function startYoutubeLoop() {
-  if (youtubeLoopRunning) return;
-  youtubeLoopRunning = true;
-  youtubeStopRequested = false;
-  pollYoutube().finally(() => { youtubeLoopRunning = false; });
-}
+function startYoutubeLoop() { if (youtubeLoopRunning) return; youtubeLoopRunning = true; youtubeStopRequested = false; pollYoutube().finally(() => { youtubeLoopRunning = false; }); }
 
 app.get('/api/state', (_req, res) => res.json(snapshot()));
 app.get('/api/health', (_req, res) => res.json({ ok: true, uptime: process.uptime(), youtube: state.youtube }));
@@ -212,7 +200,6 @@ app.post('/api/reset', async (_req, res) => {
   seenVoters.clear(); cooldowns.clear();
   await persistScores(); emitSnapshot(); res.json({ ok: true });
 });
-
 app.get('/oauth2/start', (_req, res) => {
   if (!process.env.YOUTUBE_CLIENT_ID || !process.env.YOUTUBE_CLIENT_SECRET) return res.status(500).send('Set YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET first.');
   oauthState = crypto.randomBytes(24).toString('hex');
@@ -228,12 +215,7 @@ app.get('/oauth2/callback', async (req, res) => {
     res.type('html').send(`<!doctype html><html><body style="font-family:system-ui;max-width:800px;margin:60px auto"><h1>OAuth complete</h1><p>Copy this refresh token into <code>YOUTUBE_REFRESH_TOKEN</code> on your server. Do not publish it.</p><textarea style="width:100%;height:100px">${tokens.refresh_token}</textarea><p>Then restart the server.</p></body></html>`);
   } catch (error) { res.status(500).send(`OAuth error: ${error.message}`); }
 });
-
 io.on('connection', (socket) => socket.emit('state', snapshot()));
 await loadScores();
 startYoutubeLoop();
-httpServer.listen(PORT, () => {
-  console.log(`FlagsBattle Live Country Battle: ${PUBLIC_URL}`);
-  console.log(`Demo mode: ${DEMO_MODE}`);
-  console.log(`YouTube configured: ${hasYoutubeCredentials()}`);
-});
+httpServer.listen(PORT, () => { console.log(`FlagsBattle Live Country Battle: ${PUBLIC_URL}`); console.log(`Demo mode: ${DEMO_MODE}`); console.log(`YouTube configured: ${hasYoutubeCredentials()}`); });
