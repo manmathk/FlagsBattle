@@ -13,10 +13,6 @@ const EVENT_LABELS: Record<ChaosEventKind, string> = {
   chaosSpin: '🌪️ Chaos spin',
 };
 
-/**
- * Reuse the flag atlas as a CSS sprite sheet so HUD chips need no extra assets.
- * Frames are 64px, so the sheet and offsets scale by size/64.
- */
 const flagBackground = (code: string, size: number): string => {
   const frame = (atlas.frames as Record<string, { x: number; y: number }>)[code];
   if (frame === undefined) return '';
@@ -36,10 +32,6 @@ const required = <T extends HTMLElement>(id: string): T => {
   return el as T;
 };
 
-/**
- * The HUD is DOM, not Pixi: crisper text, real accessibility, CSS-themable, and
- * no webfont-in-WebGL problem.
- */
 export class Hud {
   private readonly modeBadge = required('mode-badge');
   private readonly aliveBadge = required('alive-badge');
@@ -62,6 +54,24 @@ export class Hud {
     root.setProperty('--bg-inner', toCss(theme.bg[1]));
     root.setProperty('--accent', toCss(theme.accent));
     root.setProperty('--glow', toCss(theme.glow));
+
+    if (theme.light) {
+      root.setProperty('--text', '#0f172a');
+      root.setProperty('--muted', '#64748b');
+      root.setProperty('--panel', 'rgb(255 255 255 / 84%)');
+      root.setProperty('--border', 'rgb(15 23 42 / 12%)');
+      root.setProperty('--control-bg', 'rgb(15 23 42 / 6%)');
+      root.setProperty('--control-hover', 'rgb(15 23 42 / 11%)');
+      root.setProperty('--option-bg', '#ffffff');
+    } else {
+      root.setProperty('--text', '#f8fafc');
+      root.setProperty('--muted', '#94a3b8');
+      root.setProperty('--panel', 'rgb(8 8 16 / 62%)');
+      root.setProperty('--border', 'rgb(255 255 255 / 10%)');
+      root.setProperty('--control-bg', 'rgb(255 255 255 / 7%)');
+      root.setProperty('--control-hover', 'rgb(255 255 255 / 14%)');
+      root.setProperty('--option-bg', '#0b0b12');
+    }
   }
 
   setMode(label: string): void {
@@ -72,7 +82,6 @@ export class Hud {
     this.aliveBadge.textContent = `${alive} / ${total} alive`;
   }
 
-  /** The most recent round's winner, or nothing before the first round ends. */
   setLastWinner(flagCode: string | null): void {
     if (flagCode === null) {
       this.lastRound.hidden = true;
@@ -83,7 +92,6 @@ export class Hud {
     this.lastRound.hidden = false;
   }
 
-  /** Session tally, cleared only by Reset. */
   setTopFive(standings: readonly Standing[], roundsPlayed: number): void {
     this.topTitle.textContent =
       roundsPlayed === 0
@@ -102,7 +110,6 @@ export class Hud {
       ...standings.map((standing) => {
         const item = document.createElement('li');
         item.className = 'strip-item';
-        // The compact layout has no room for names, so carry them as tooltips.
         item.title = `${nameOf(standing.flagCode)} — ${standing.wins} ${
           standing.wins === 1 ? 'win' : 'wins'
         }`;
@@ -130,8 +137,6 @@ export class Hud {
       return;
     }
 
-    // Only the leaders: the strip is one line, and a contender on zero wins is
-    // not in the race yet.
     this.seriesList.replaceChildren(
       ...standings.slice(0, 3).map((standing) => {
         const item = document.createElement('li');
