@@ -1,12 +1,16 @@
 import type { AudioEngine } from './AudioEngine';
 
 /**
- * Any audio file dropped into `src/audio/tracks/` becomes the soundtrack.
- *
- * Resolved by a build-time glob rather than by probing `public/audio/` at
- * runtime: static hosting has no directory listing, so probing would mean
- * guessing filenames and eating a 404 on every page load. The trade-off is that
- * tracks live under `src/` instead of `public/`.
+ * CC0 soundtrack hosted by OpenGameArt.org.
+ * "Space Music: Out There" by yd is explicitly marked CC0 and is a 4-minute
+ * background loop, making it a good fit for the spinning arena battle.
+ * Source: https://opengameart.org/content/space-music-out-there
+ */
+const CC0_SPACE_TRACK_URL = 'https://opengameart.org/sites/default/files/OutThere.ogg';
+
+/**
+ * A local track takes precedence when one is supplied under src/audio/tracks/.
+ * Otherwise use the verified CC0 OpenGameArt track.
  */
 const TRACKS = import.meta.glob('./tracks/*.{mp3,ogg,m4a,wav}', {
   eager: true,
@@ -14,17 +18,12 @@ const TRACKS = import.meta.glob('./tracks/*.{mp3,ogg,m4a,wav}', {
   import: 'default',
 }) as Record<string, string>;
 
-/** URL of the bundled track, or null when none was supplied. */
 export const externalTrackUrl = (): string | null => {
   const paths = Object.keys(TRACKS).sort();
   const first = paths[0];
-  return first === undefined ? null : (TRACKS[first] ?? null);
+  return first === undefined ? CC0_SPACE_TRACK_URL : (TRACKS[first] ?? CC0_SPACE_TRACK_URL);
 };
 
-/**
- * Loops a supplied audio file through the master gain, so the mute control and
- * levels behave identically to the generated soundtrack.
- */
 export class TrackMusic {
   readonly source = 'file' as const;
 
@@ -36,7 +35,6 @@ export class TrackMusic {
     private readonly url: string,
   ) {}
 
-  /** A file has fixed dynamics, so intensity does not apply. */
   setIntensity(): void {}
 
   start(): void {
@@ -51,13 +49,12 @@ export class TrackMusic {
     }
 
     if (!this.wired) {
-      // A media element source can only be created once per element.
       ctx.createMediaElementSource(this.element).connect(out);
       this.wired = true;
     }
 
     void this.element.play().catch(() => {
-      // Playback can still be refused if this was not reached from a gesture.
+      // Browser autoplay policy may require the user to press the sound control.
     });
   }
 
