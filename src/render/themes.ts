@@ -7,13 +7,11 @@
 export interface Theme {
   readonly id: string;
   readonly label: string;
-  /** Background gradient, outer to inner. */
   readonly bg: readonly [number, number];
   readonly ring: number;
   readonly glow: number;
   readonly particle: number;
   readonly accent: number;
-  /** Use dark text/panels for light backgrounds. */
   readonly light?: boolean;
 }
 
@@ -40,5 +38,4 @@ export const DEFAULT_THEME_ID = 'space';
 export const themeById = (id: string): Theme =>
   THEMES.find((t) => t.id === id) ?? THEMES.find((t) => t.id === DEFAULT_THEME_ID)!;
 
-/** Pixi wants numbers; CSS wants strings. */
 export const toCss = (color: number): string => `#${color.toString(16).padStart(6, '0')}`;
