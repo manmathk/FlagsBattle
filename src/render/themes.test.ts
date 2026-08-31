@@ -2,8 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_THEME_ID, THEMES, themeById, toCss } from './themes';
 
 describe('THEMES', () => {
-  it('ships all fourteen arena themes', () => {
-    expect(THEMES).toHaveLength(14);
+  it('ships all fifteen arena themes', () => {
+    expect(THEMES).toHaveLength(15);
+  });
+
+  it('includes the white light theme', () => {
+    const white = themeById('white');
+    expect(white.label).toBe('☀️ White');
+    expect(white.bg).toEqual([0xffffff, 0xf1f5f9]);
   });
 
   it('has unique ids', () => {
