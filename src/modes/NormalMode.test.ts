@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NormalMode } from './NormalMode';
-import { NORMAL } from './NormalMode';
+import { NormalMode, NORMAL } from './NormalMode';
 import { makeWorld, runMode } from '../test/fixture';
 import { vec } from '../core/Vec2';
 import { ORBIT, SIM } from '../config';
@@ -17,10 +16,7 @@ describe('NormalMode', () => {
     body.pos = vec(200, 0);
 
     const g = mode.gravity(body, 0, world.arena);
-    // Inward pull toward the centre...
     expect(g.x).toBeCloseTo(-ORBIT.centripetal, 6);
-    // ...plus a tangential drive perpendicular to it, which is what keeps the
-    // field circulating instead of collapsing into the middle.
     expect(Math.abs(g.y)).toBeCloseTo(ORBIT.tangential, 6);
   });
 
@@ -37,13 +33,19 @@ describe('NormalMode', () => {
     }
   });
 
-  it('opens a gap in the ring', () => {
+  it('keeps holes closed for the first five seconds', () => {
     const mode = new NormalMode();
     const world = makeWorld(20, mode);
-    runMode(mode, world, 0.1);
+    runMode(mode, world, NORMAL.holeDelaySeconds - 0.01);
+    expect(world.arena.gap).toBeNull();
+  });
+
+  it('opens a gap after the five-second countdown', () => {
+    const mode = new NormalMode();
+    const world = makeWorld(20, mode);
+    runMode(mode, world, NORMAL.holeDelaySeconds + 0.1);
     expect(world.arena.gap).not.toBeNull();
     expect(world.arena.gap!.width).toBe(NORMAL.gapWidth);
-    // A proper arc, not a degenerate slit or the whole ring.
     expect(world.arena.gap!.width).toBeGreaterThan(0);
     expect(world.arena.gap!.width).toBeLessThan(Math.PI);
   });
@@ -52,12 +54,11 @@ describe('NormalMode', () => {
     const mode = new NormalMode();
     const world = makeWorld(20, mode);
     const seen = new Set<string>();
-    // One full revolution plus a margin, derived from the rotation rate.
-    const fullRevolution = (Math.PI * 2) / NORMAL.gapRotation + 1;
+    const fullRevolution = NORMAL.holeDelaySeconds + (Math.PI * 2) / NORMAL.gapRotation + 1;
     runMode(mode, world, fullRevolution, {
       onStep: ({ world: w }) => {
-        const a = w.arena.gap!.centerAngle;
-        // Which quadrant the gap currently sits in.
+        if (w.arena.gap === null) return;
+        const a = w.arena.gap.centerAngle;
         seen.add(String(Math.floor(((a + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 2))));
       },
     });
@@ -67,7 +68,7 @@ describe('NormalMode', () => {
   it('keeps the gap angle bounded rather than growing without limit', () => {
     const mode = new NormalMode();
     const world = makeWorld(20, mode);
-    runMode(mode, world, 600);
+    runMode(mode, world, NORMAL.holeDelaySeconds + 600);
     expect(Math.abs(world.arena.gap!.centerAngle)).toBeLessThanOrEqual(Math.PI * 2);
   });
 
