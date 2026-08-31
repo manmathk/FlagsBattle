@@ -1,396 +1,74 @@
-/*
- * The themed background lives here rather than in Pixi: a CSS gradient is
- * crisper than a gradient mesh, costs no draw call, and makes switching themes a
- * variable change. Theme colours are injected as custom properties at runtime.
- */
+/* Themed arena background. */
 :root {
-  --bg-outer: #05010f;
-  --bg-inner: #140a2e;
-  --accent: #a78bfa;
-  --glow: #a78bfa;
-  --text: #f8fafc;
-  --muted: #94a3b8;
-  --panel: rgb(8 8 16 / 62%);
-  --border: rgb(255 255 255 / 10%);
+  --bg-outer: #05010f; --bg-inner: #140a2e; --accent: #a78bfa; --glow: #a78bfa;
+  --text: #f8fafc; --muted: #94a3b8; --panel: rgb(8 8 16 / 62%); --border: rgb(255 255 255 / 10%);
   --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
-
-* {
-  box-sizing: border-box;
-}
-
-/*
- * An explicit `display` in a rule beats the `hidden` attribute's UA `display:
- * none`, so .banner (display: flex) stayed visible as an empty panel. Anything
- * toggled via `hidden` needs this.
- */
-[hidden] {
-  display: none !important;
-}
-
-html,
-body {
-  height: 100%;
-  margin: 0;
-  overflow: hidden;
-}
-
-body {
-  background:
-    radial-gradient(circle at 50% 45%, var(--bg-inner) 0%, var(--bg-outer) 70%),
-    var(--bg-outer);
-  color: var(--text);
-  font-family: var(--font);
-  transition: background 600ms ease;
-  -webkit-font-smoothing: antialiased;
-}
-
-#stage {
-  position: fixed;
-  inset: 0;
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-/* HUD ---------------------------------------------------------------------- */
-
-#hud {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  padding: clamp(12px, 2vw, 28px);
-}
-
-.hud-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.badge {
-  padding: 7px 14px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--panel);
-  backdrop-filter: blur(8px);
-  font-size: clamp(11px, 1.1vw, 14px);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text);
-}
-
-#alive-badge {
-  color: var(--accent);
-  font-variant-numeric: tabular-nums;
-}
-
-/*
- * Results strip. Sits under the top badges rather than beside the arena: a
- * left-hand panel overlapped the arena on narrow/portrait viewports, where the
- * letterboxed arena is widest relative to the screen.
- */
-.strip {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 10px;
-  /* Tooltips carry the country names the compact layout drops. */
-  pointer-events: auto;
-}
-
-.strip-block {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--panel);
-  backdrop-filter: blur(8px);
-}
-
-.strip-label {
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.strip-name {
-  overflow: hidden;
-  max-width: 34vw;
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 700;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.strip-list {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.strip-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.strip-count {
-  color: var(--accent);
-  font-size: 11px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-.strip-empty {
-  color: var(--muted);
-  font-size: 11px;
-  white-space: nowrap;
-}
-
-.flag-chip {
-  flex: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background-repeat: no-repeat;
-}
-
-.pips {
-  display: flex;
-  gap: 2px;
-}
-
-.pip {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: rgb(255 255 255 / 20%);
-}
-
-.pip.won {
-  background: var(--accent);
-  box-shadow: 0 0 6px var(--glow);
-}
-
-.event-label {
-  position: absolute;
-  bottom: clamp(72px, 11vh, 116px);
-  /* Same reasoning as #controls: auto margins get the full width. */
-  left: 0;
-  right: 0;
-  width: fit-content;
-  max-width: calc(100% - 24px);
-  margin-inline: auto;
-  padding: 8px 20px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--panel);
-  color: var(--accent);
-  font-size: clamp(11px, 1.2vw, 15px);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  animation: rise 320ms ease both;
-}
-
-.banner {
-  position: absolute;
-  /* Centred on both axes by auto margins, so the winner's name has the whole
-     viewport to fit in rather than half of it. */
-  inset: 0;
-  width: fit-content;
-  height: fit-content;
-  max-width: calc(100% - 32px);
-  margin: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 14px;
-  padding: clamp(20px, 3vw, 40px) clamp(30px, 5vw, 70px);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  background: var(--panel);
-  backdrop-filter: blur(14px);
-  text-align: center;
-  animation: pop 380ms cubic-bezier(0.2, 1.3, 0.4, 1) both;
-}
-
-.banner-kicker {
-  color: var(--muted);
-  font-size: clamp(10px, 1vw, 12px);
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
-.banner-flag {
-  width: clamp(64px, 9vw, 112px);
-  height: clamp(64px, 9vw, 112px);
-  border-radius: 50%;
-  background-repeat: no-repeat;
-  box-shadow: 0 0 44px var(--glow);
-}
-
-.banner-name {
-  font-size: clamp(22px, 3.4vw, 48px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.05;
-}
-
-.banner.champion .banner-name {
-  color: var(--accent);
-  text-shadow: 0 0 32px var(--glow);
-}
-
-/* Controls ----------------------------------------------------------------- */
-
-#controls {
-  position: fixed;
-  bottom: clamp(12px, 2vh, 24px);
-  /*
-   * Centred via auto margins rather than `left: 50%` + translate. With
-   * `left: 50%` a shrink-to-fit flex container only has the *remaining* half of
-   * the viewport to lay out in, so the controls wrapped onto four rows on a
-   * phone even though they fit easily on one.
-   */
-  left: 0;
-  right: 0;
-  width: fit-content;
-  max-width: calc(100% - 24px);
-  margin-inline: auto;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--panel);
-  backdrop-filter: blur(10px);
-}
-
-.control {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  height: 36px;
-  padding: 0 16px;
-  border: 1px solid transparent;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 7%);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 160ms ease, border-color 160ms ease;
-}
-
-.control:hover {
-  background: rgb(255 255 255 / 14%);
-  border-color: var(--border);
-}
-
-.control:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.control-icon {
-  padding: 0;
-  width: 36px;
-  justify-content: center;
-  font-size: 15px;
-  line-height: 1;
-}
-
-.select {
-  padding-left: 14px;
-  cursor: default;
-}
-
-.select-label {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.select select {
-  height: 100%;
-  border: none;
-  background: transparent;
-  color: var(--text);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.select select option {
-  background: #0b0b12;
-  color: var(--text);
-}
-
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body { background: radial-gradient(circle at 50% 45%, var(--bg-inner) 0%, var(--bg-outer) 70%), var(--bg-outer); color: var(--text); font-family: var(--font); transition: background 600ms ease; -webkit-font-smoothing: antialiased; }
+#stage { position: fixed; inset: 0; display: block; width: 100%; height: 100%; }
+#hud { position: fixed; inset: 0; pointer-events: none; padding: clamp(10px, 1.6vw, 24px); }
+.hud-row { display: flex; justify-content: space-between; gap: 12px; }
+.badge { padding: 7px 14px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); backdrop-filter: blur(8px); font-size: clamp(11px, 1.1vw, 14px); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+#alive-badge { color: var(--accent); font-variant-numeric: tabular-nums; }
+.strip { display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; margin-top: 9px; pointer-events: auto; }
+.strip-block { display: flex; align-items: center; gap: 8px; max-width: 100%; padding: 6px 10px; border: 1px solid var(--border); border-radius: 16px; background: var(--panel); backdrop-filter: blur(10px); }
+.strip-label { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.strip-name { overflow: hidden; max-width: 34vw; color: var(--accent); font-size: 13px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
+.strip-list { display: flex; align-items: stretch; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.strip-empty { color: var(--muted); font-size: 11px; white-space: nowrap; }
+.winner-item { display: flex; align-items: center; gap: 6px; min-width: 92px; padding: 4px 7px; border: 1px solid var(--border); border-radius: 10px; background: rgb(255 255 255 / 5%); }
+.winner-rank { width: 15px; color: var(--muted); font-size: 10px; font-weight: 800; text-align: center; }
+.winner-rank-1 .winner-rank { color: var(--accent); }
+.winner-flag { flex: none; width: 26px; height: 26px; border-radius: 50%; background-repeat: no-repeat; box-shadow: 0 0 7px rgb(0 0 0 / 18%); }
+.winner-info { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.winner-name { max-width: 100px; overflow: hidden; color: var(--text); font-size: 10px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis; }
+.winner-wins { color: var(--accent); font-size: 9px; font-weight: 700; white-space: nowrap; }
+.flag-chip { flex: none; width: 22px; height: 22px; border-radius: 50%; background-repeat: no-repeat; }
+.pips { display: flex; gap: 2px; }
+.pip { width: 5px; height: 5px; border-radius: 50%; background: rgb(255 255 255 / 20%); }
+.pip.won { background: var(--accent); box-shadow: 0 0 6px var(--glow); }
+.event-label { position: absolute; bottom: clamp(72px, 11vh, 116px); left: 0; right: 0; width: fit-content; max-width: calc(100% - 24px); margin-inline: auto; padding: 8px 20px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); color: var(--accent); font-size: clamp(11px, 1.2vw, 15px); font-weight: 700; letter-spacing: .16em; text-transform: uppercase; animation: rise 320ms ease both; }
+.banner { position: absolute; inset: 0; width: fit-content; height: fit-content; max-width: calc(100% - 32px); margin: auto; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: clamp(20px, 3vw, 40px) clamp(30px, 5vw, 70px); border: 1px solid var(--border); border-radius: 22px; background: var(--panel); backdrop-filter: blur(14px); text-align: center; animation: pop 380ms cubic-bezier(.2, 1.3, .4, 1) both; }
+.banner-kicker { color: var(--muted); font-size: clamp(10px, 1vw, 12px); font-weight: 700; letter-spacing: .22em; text-transform: uppercase; }
+.banner-flag { width: clamp(64px, 9vw, 112px); height: clamp(64px, 9vw, 112px); border-radius: 50%; background-repeat: no-repeat; box-shadow: 0 0 44px var(--glow); }
+.banner-name { font-size: clamp(22px, 3.4vw, 48px); font-weight: 800; letter-spacing: -.02em; line-height: 1.05; }
+.banner.champion .banner-name { color: var(--accent); text-shadow: 0 0 32px var(--glow); }
+#controls { position: fixed; bottom: clamp(10px, 2vh, 24px); left: 0; right: 0; width: fit-content; max-width: calc(100% - 20px); margin-inline: auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 7px; padding: 7px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); backdrop-filter: blur(10px); }
+.control { display: flex; align-items: center; gap: 7px; height: 36px; padding: 0 15px; border: 1px solid transparent; border-radius: 999px; background: rgb(255 255 255 / 7%); color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+.control:hover { background: rgb(255 255 255 / 14%); border-color: var(--border); }
+.control:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.control-icon { padding: 0; width: 36px; justify-content: center; font-size: 15px; line-height: 1; }
+.select { padding-left: 14px; cursor: default; }
+.select-label { color: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.select select { height: 100%; border: none; background: transparent; color: var(--text); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.select select option { background: var(--option-bg, #0b0b12); color: var(--text); }
 @media (max-width: 620px) {
-  .strip-block {
-    padding: 5px 9px;
-  }
-
-  .flag-chip {
-    width: 18px;
-    height: 18px;
-  }
-
-  .control {
-    height: 32px;
-    padding: 0 11px;
-    font-size: 12px;
-  }
-
-  .control-icon {
-    width: 32px;
-    padding: 0;
-  }
-
-  /* The select's own value already says which mode/arena is active. */
-  .select-label {
-    display: none;
-  }
+  #hud { padding: 8px; }
+  .strip { gap: 5px; margin-top: 7px; }
+  .strip-block { padding: 5px 7px; border-radius: 12px; gap: 5px; }
+  .strip-list { gap: 4px; }
+  .winner-item { min-width: 0; flex: 1 1 0; padding: 4px 4px; gap: 4px; }
+  .winner-rank { width: 12px; }
+  .winner-flag { width: 21px; height: 21px; }
+  .winner-name { max-width: 58px; font-size: 8px; }
+  .winner-wins { font-size: 8px; }
+  .strip-label { font-size: 8px; }
+  .strip-name { max-width: 28vw; font-size: 11px; }
+  .control { height: 32px; padding: 0 10px; font-size: 11px; }
+  .control-icon { width: 32px; padding: 0; }
+  .select-label { display: none; }
+  #controls { gap: 4px; padding: 5px; max-width: calc(100% - 10px); }
 }
-
-@keyframes pop {
-  from {
-    opacity: 0;
-    transform: scale(0.92);
-  }
+@media (max-width: 390px) {
+  .winner-item { padding: 3px 2px; }
+  .winner-rank { display: none; }
+  .winner-flag { width: 19px; height: 19px; }
+  .winner-name { max-width: 48px; }
+  .strip-block:first-child { display: none; }
 }
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .banner,
-  .event-label {
-    animation: none;
-  }
-}
+@keyframes pop { from { opacity: 0; transform: scale(.92); } }
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) { .banner, .event-label { animation: none; } }
