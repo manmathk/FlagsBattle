@@ -1,10 +1,8 @@
 /**
- * The 14 arena themes.
+ * Arena themes.
  *
  * Each theme is pure data: background stops, ring, glow, particle and accent
- * colours. There are deliberately no per-theme code paths — adding a theme means
- * adding a row here, and the same row drives both the Pixi palette and the CSS
- * custom properties on the DOM HUD.
+ * colours. Light themes may also opt into a high-contrast DOM palette.
  */
 export interface Theme {
   readonly id: string;
@@ -15,6 +13,8 @@ export interface Theme {
   readonly glow: number;
   readonly particle: number;
   readonly accent: number;
+  /** Use dark text/panels for light backgrounds. */
+  readonly light?: boolean;
 }
 
 export const THEMES: readonly Theme[] = [
@@ -32,6 +32,7 @@ export const THEMES: readonly Theme[] = [
   { id: 'shadow', label: '🌚 Shadow', bg: [0x060608, 0x16161c], ring: 0x6b7280, glow: 0x9ca3af, particle: 0xd1d5db, accent: 0x9ca3af },
   { id: 'lava', label: '🌋 Lava', bg: [0x1a0500, 0x4a0f00], ring: 0xff6b1a, glow: 0xffb347, particle: 0xffd08a, accent: 0xff6b1a },
   { id: 'deepsea', label: '🌊 DeepSea', bg: [0x001014, 0x01303a], ring: 0x06b6d4, glow: 0x22d3ee, particle: 0xa5f3fc, accent: 0x06b6d4 },
+  { id: 'white', label: '☀️ White', bg: [0xffffff, 0xf1f5f9], ring: 0x334155, glow: 0x64748b, particle: 0x94a3b8, accent: 0x2563eb, light: true },
 ];
 
 export const DEFAULT_THEME_ID = 'space';
