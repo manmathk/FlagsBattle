@@ -8,14 +8,14 @@ import type { Theme } from './themes';
 
 /** Breathing room around the arena, as a multiple of its diameter. */
 const ARENA_MARGIN = 1.08;
+/** Portrait screens can use more of the vertical viewport without harming readability. */
+const PORTRAIT_ARENA_BOOST = 1.18;
 
-/** Vertical band the arena is laid out in, when no HUD insets are supplied. */
 export interface LayoutInset {
   top: number;
   bottom: number;
 }
 
-/** Halo size relative to the flag itself. */
 const HALO_SCALE = 2.4;
 const HALO_ALPHA = 0.4;
 
@@ -24,14 +24,6 @@ interface FlagView {
   halo: Sprite;
 }
 
-/**
- * Draws the simulation. Read-only with respect to world state: it never mutates
- * a body, so the simulation stays authoritative and independently testable.
- *
- * The themed background is a CSS gradient on the page rather than a Pixi layer —
- * the canvas is transparent over it. That is crisper than a gradient mesh, makes
- * theme switching a CSS variable change, and saves a full-screen draw per frame.
- */
 export class Renderer {
   private readonly root = new Container();
   private readonly ring = new ArenaRing();
@@ -58,13 +50,11 @@ export class Renderer {
     const app = new Application();
     await app.init({
       canvas,
-      // Transparent: the themed gradient lives in CSS behind the canvas.
       backgroundAlpha: 0,
       antialias: true,
       resolution: Math.min(window.devicePixelRatio || 1, 2),
       autoDensity: true,
       resizeTo: window,
-      // The simulation drives its own fixed-step loop.
       autoStart: false,
     });
 
@@ -78,7 +68,6 @@ export class Renderer {
     for (const view of this.views.values()) view.halo.tint = theme.glow;
   }
 
-  /** Rebuild sprites for a new round. */
   bindRound(world: World): void {
     this.flagLayer.removeChildren();
     this.haloLayer.removeChildren();
@@ -106,12 +95,6 @@ export class Renderer {
     }
   }
 
-  /**
-   * @param alpha fraction of a physics step still pending, for interpolation.
-   * @param dt real seconds since the last frame, for effect lifetimes.
-   * @param events this frame's world events. Passed in rather than drained here,
-   *   because the HUD needs the same events and a queue can only be drained once.
-   */
   frame(world: World, alpha: number, dt: number, events: readonly WorldEvent[]): void {
     this.elapsed += dt;
 
@@ -119,7 +102,6 @@ export class Renderer {
     this.effects.consume(events, STAGE.height);
     this.effects.update(dt);
 
-    // Telegraphed flags pulse; shared phase so a struck batch flashes together.
     const pulse = 0.6 + 0.4 * Math.sin(this.elapsed * 22);
 
     for (const body of world.bodies) {
@@ -135,9 +117,6 @@ export class Renderer {
       const x = body.prevPos.x + (body.pos.x - body.prevPos.x) * alpha;
       const y = body.prevPos.y + (body.pos.y - body.prevPos.y) * alpha;
       view.flag.position.set(x, y);
-      // Contact friction spins the bodies; showing it is what makes them read as
-      // balls rolling rather than discs sliding. The halo is radial, so it does
-      // not need rotating.
       view.flag.rotation = body.angle;
       view.halo.position.set(x, y);
 
@@ -154,24 +133,27 @@ export class Renderer {
   }
 
   /**
-   * Fit the arena into the space the HUD leaves it.
-   *
-   * Scaling is driven by the arena's own diameter rather than by letterboxing the
-   * 16:9 logical stage. On a portrait phone the stage's aspect ratio is the
-   * binding constraint, which shrank the arena to roughly a fifth of the screen
-   * while most of the display sat empty.
+   * Fit the arena into the HUD-safe viewport. Portrait phones intentionally use
+   * a larger arena because their viewport is much taller than it is wide; the
+   * previous fit left substantial unused space above and below the circle.
    */
   resize(inset: LayoutInset = { top: 0, bottom: 0 }): void {
     const width = window.innerWidth;
     const height = window.innerHeight;
+    const portrait = height > width;
 
-    const availableWidth = Math.max(120, width - 24);
+    // On portrait mobile, use almost the full screen width and allow a modest
+    // controlled overlap with the HUD's empty margins. The HUD itself remains
+    // above the canvas because it is a fixed DOM layer.
+    const horizontalPadding = portrait ? 8 : 24;
+    const availableWidth = Math.max(120, width - horizontalPadding * 2);
     const availableHeight = Math.max(120, height - inset.top - inset.bottom);
 
     const span = SIM.arenaRadius * 2 * ARENA_MARGIN;
-    this.root.scale.set(Math.min(availableWidth, availableHeight) / span);
-    // Simulation coordinates are centred on the origin; centre it in the band the
-    // HUD leaves rather than in the window, so it is not pushed under the strip.
+    const fitScale = Math.min(availableWidth, availableHeight) / span;
+    const scale = portrait ? fitScale * PORTRAIT_ARENA_BOOST : fitScale;
+
+    this.root.scale.set(scale);
     this.root.position.set(width / 2, inset.top + availableHeight / 2);
   }
 }
