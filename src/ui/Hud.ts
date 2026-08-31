@@ -93,36 +93,43 @@ export class Hud {
   }
 
   setTopFive(standings: readonly Standing[], roundsPlayed: number): void {
-    this.topTitle.textContent =
-      roundsPlayed === 0
-        ? 'Top 5'
-        : `Top 5 · ${roundsPlayed} ${roundsPlayed === 1 ? 'round' : 'rounds'}`;
+    this.topTitle.textContent = roundsPlayed === 0 ? '🏆 Top 5 Winners' : `🏆 Top 5 Winners · ${roundsPlayed} ${roundsPlayed === 1 ? 'round' : 'rounds'}`;
 
     if (standings.length === 0) {
       const empty = document.createElement('li');
       empty.className = 'strip-empty';
-      empty.textContent = 'No rounds yet';
+      empty.textContent = 'Waiting for the first champion…';
       this.topList.replaceChildren(empty);
       return;
     }
 
     this.topList.replaceChildren(
-      ...standings.map((standing) => {
+      ...standings.slice(0, 5).map((standing, index) => {
         const item = document.createElement('li');
-        item.className = 'strip-item';
-        item.title = `${nameOf(standing.flagCode)} — ${standing.wins} ${
-          standing.wins === 1 ? 'win' : 'wins'
-        }`;
+        item.className = `winner-item winner-rank-${index + 1}`;
+        item.title = `${index + 1}. ${nameOf(standing.flagCode)} — ${standing.wins} ${standing.wins === 1 ? 'win' : 'wins'}`;
+
+        const rank = document.createElement('span');
+        rank.className = 'winner-rank';
+        rank.textContent = `${index + 1}`;
 
         const chip = document.createElement('span');
-        chip.className = 'flag-chip';
-        chip.setAttribute('style', flagBackground(standing.flagCode, 22));
+        chip.className = 'winner-flag';
+        chip.setAttribute('style', flagBackground(standing.flagCode, 30));
+
+        const info = document.createElement('span');
+        info.className = 'winner-info';
+
+        const name = document.createElement('span');
+        name.className = 'winner-name';
+        name.textContent = nameOf(standing.flagCode);
 
         const wins = document.createElement('span');
-        wins.className = 'strip-count';
-        wins.textContent = `${standing.wins}`;
+        wins.className = 'winner-wins';
+        wins.textContent = `${standing.wins} ${standing.wins === 1 ? 'win' : 'wins'}`;
 
-        item.append(chip, wins);
+        info.append(name, wins);
+        item.append(rank, chip, info);
         return item;
       }),
     );
