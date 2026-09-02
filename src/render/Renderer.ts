@@ -79,13 +79,13 @@ export class Renderer {
     for (const body of world.bodies) {
       const flag = new Sprite(this.flagTextures.get(body.flagCode));
       flag.anchor.set(0.5);
-      flag.width = size;
-      flag.height = size;
+      flag.width = size * 0.75;
+      flag.height = size * 0.75;
 
       const halo = new Sprite(this.glowTexture);
       halo.anchor.set(0.5);
-      halo.width = size * HALO_SCALE;
-      halo.height = size * HALO_SCALE;
+      halo.width = size * HALO_SCALE * 0.75;
+      halo.height = size * HALO_SCALE * 0.75;
       halo.alpha = HALO_ALPHA;
       halo.tint = this.theme.glow;
 
