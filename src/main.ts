@@ -24,13 +24,14 @@ const SOUND_LIMITS = {
   elimination: { maxPerFrame: 2, cooldownMs: 30 },
 } as const;
 
-/** Chrome/Chromium native speech synthesis. No external API, audio file, or network request. */
+/** Browser-native speech synthesis with an iOS/Safari user-gesture priming step. */
 class WinnerVoice {
   private enabled = false;
   private selectedVoice: SpeechSynthesisVoice | undefined;
 
   constructor() {
     if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
+
     const chooseVoice = (): void => {
       const voices = window.speechSynthesis.getVoices();
       this.selectedVoice =
@@ -38,12 +39,29 @@ class WinnerVoice {
         voices.find((voice) => /^en(-|_)/i.test(voice.lang)) ??
         voices[0];
     };
+
     chooseVoice();
     window.speechSynthesis.addEventListener('voiceschanged', chooseVoice);
   }
 
+  /**
+   * Must be called from a real user gesture on iOS Safari before later,
+   * timer-driven speech is allowed to play.
+   */
   unlock(): void {
-    this.enabled = 'speechSynthesis' in window;
+    if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
+
+    this.enabled = true;
+    const synth = window.speechSynthesis;
+    synth.cancel();
+
+    // iOS Safari can keep speech muted until the speech engine has been
+    // primed from a user gesture. Queue a silent utterance during that gesture.
+    const primer = new SpeechSynthesisUtterance(' ');
+    primer.lang = 'en-US';
+    primer.volume = 0;
+    if (this.selectedVoice) primer.voice = this.selectedVoice;
+    synth.speak(primer);
   }
 
   speakRoundWinner(country: string, roundNumber: number): void {
@@ -58,13 +76,16 @@ class WinnerVoice {
   }
 
   private speak(text: string, champion: boolean): void {
-    window.speechSynthesis.cancel();
+    const synth = window.speechSynthesis;
+    synth.cancel();
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = champion ? 0.9 : 1;
     utterance.pitch = champion ? 1.05 : 1;
     if (this.selectedVoice) utterance.voice = this.selectedVoice;
-    window.speechSynthesis.speak(utterance);
+
+    synth.speak(utterance);
   }
 }
 
@@ -151,7 +172,8 @@ const main = async (): Promise<void> => {
   controls.setPlaying(loop.running);
   controls.setMuted(muted);
 
-  // A click anywhere on the page can unlock Chromium speech without requiring the user to use the sound toggle.
+  // Prime native speech on the first real touch/click. This is required by
+  // iOS Safari so winner announcements can play later without another tap.
   window.addEventListener('pointerdown', () => winnerVoice.unlock(), { once: true, passive: true });
   window.addEventListener('resize', layoutArena);
 
