@@ -73,7 +73,7 @@ export const FLAG_COUNT = FLAGS.length;
  */
 export const bodyRadiusFor = (
   count: number,
-  arenaRadius = SIM.arenaRadius,
+  arenaRadius: number = SIM.arenaRadius,
   density: number = SIM.packingDensity,
 ): number => {
   if (count <= 0) throw new Error('bodyRadiusFor: count must be positive');
