@@ -1,5 +1,5 @@
 /** Master level when unmuted. Deliberately conservative for a page that autoplays. */
-const MASTER_GAIN = 0.5;
+const MASTER_GAIN = 0.8;
 const RAMP_SECONDS = 0.25;
 
 /**
