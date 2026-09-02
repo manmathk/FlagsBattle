@@ -8,8 +8,6 @@ import type { Theme } from './themes';
 
 /** Breathing room around the arena, as a multiple of its diameter. */
 const ARENA_MARGIN = 1.08;
-/** Portrait screens can use more of the vertical viewport without harming readability. */
-const PORTRAIT_ARENA_BOOST = 1.18;
 
 export interface LayoutInset {
   top: number;
@@ -132,28 +130,22 @@ export class Renderer {
     this.app.render();
   }
 
-  /**
-   * Fit the arena into the HUD-safe viewport. Portrait phones intentionally use
-   * a larger arena because their viewport is much taller than it is wide; the
-   * previous fit left substantial unused space above and below the circle.
-   */
+  /** Fit the arena into the HUD-safe viewport without letting the mobile circle clip. */
   resize(inset: LayoutInset = { top: 0, bottom: 0 }): void {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const portrait = height > width;
 
-    // On portrait mobile, use almost the full screen width and allow a modest
-    // controlled overlap with the HUD's empty margins. The HUD itself remains
-    // above the canvas because it is a fixed DOM layer.
-    const horizontalPadding = portrait ? 8 : 24;
+    // Keep a little extra horizontal breathing room on phones because the
+    // arena ring and glow extend beyond the simulation radius visually.
+    const horizontalPadding = portrait ? 20 : 24;
     const availableWidth = Math.max(120, width - horizontalPadding * 2);
     const availableHeight = Math.max(120, height - inset.top - inset.bottom);
 
     const span = SIM.arenaRadius * 2 * ARENA_MARGIN;
     const fitScale = Math.min(availableWidth, availableHeight) / span;
-    const scale = portrait ? fitScale * PORTRAIT_ARENA_BOOST : fitScale;
 
-    this.root.scale.set(scale);
+    this.root.scale.set(fitScale);
     this.root.position.set(width / 2, inset.top + availableHeight / 2);
   }
 }
