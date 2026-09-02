@@ -8,7 +8,10 @@ import { bodyRadiusFor, SIM } from '../config';
 const codes = (n: number) => Array.from({ length: n }, (_, i) => `c${i}`);
 const DT = SIM.fixedStep;
 
-const TEST_FLAG_COUNT = 40;
+// This fixture exercises Round lifecycle behaviour without requiring the full
+// production flag set. Keep it below the spawn lattice capacity with the larger
+// production ball size.
+const TEST_FLAG_COUNT = 30;
 const TEST_ARENA_RADIUS = 900;
 const TEST_BODY_RADIUS = bodyRadiusFor(TEST_FLAG_COUNT, TEST_ARENA_RADIUS);
 
@@ -80,7 +83,6 @@ describe('Round', () => {
   it('engages sudden death once the cap is passed', () => {
     const stalled = new (class extends NormalMode {
       override onRoundStart(ctx: ModeContext): void {
-        ctx.world.arena.radius = TEST_ARENA_RADIUS;
         ctx.world.arena.gap = null;
       }
 
