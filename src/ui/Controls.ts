@@ -18,6 +18,7 @@ export interface ControlHandlers {
   onTogglePlay: () => void;
   onReset: () => void;
   onToggleSound: () => void;
+  onVoiceEnable: () => void;
   onModeChange: (id: ModeId) => void;
   onThemeChange: (id: string) => void;
 }
@@ -32,6 +33,7 @@ export class Controls {
   private readonly play = required<HTMLButtonElement>('play');
   private readonly reset = required<HTMLButtonElement>('reset');
   private readonly sound = required<HTMLButtonElement>('sound');
+  private readonly voice = required<HTMLButtonElement>('voice');
   private readonly mode = required<HTMLSelectElement>('mode');
   private readonly theme = required<HTMLSelectElement>('theme');
 
@@ -39,8 +41,6 @@ export class Controls {
     handlers: ControlHandlers,
     initial: { modeId: ModeId; themeId: string },
   ) {
-    // Options are built from the same data the game uses, so a new theme or mode
-    // cannot drift out of sync with the markup.
     this.mode.replaceChildren(...MODE_IDS.map((id) => new Option(MODE_LABELS[id], id)));
     this.theme.replaceChildren(...THEMES.map((t) => new Option(t.label, t.id)));
     this.mode.value = initial.modeId;
@@ -48,9 +48,10 @@ export class Controls {
 
     this.play.addEventListener('click', handlers.onTogglePlay);
     this.reset.addEventListener('click', handlers.onReset);
-    // This click is also what unlocks the AudioContext — browsers will not start
-    // audio outside a gesture.
     this.sound.addEventListener('click', handlers.onToggleSound);
+    // Keep voice activation directly on the button click so iOS Safari sees
+    // the speech request as part of the user's activation.
+    this.voice.addEventListener('click', handlers.onVoiceEnable);
     this.mode.addEventListener('change', () => {
       handlers.onModeChange(this.mode.value as ModeId);
     });
@@ -59,15 +60,11 @@ export class Controls {
     });
 
     window.addEventListener('keydown', (event) => {
-      // Ignore keys aimed at a control: a <select> would otherwise have its
-      // keyboard navigation double as arena input, and a focused <button>
-      // already activates itself on Space, so handling it here too risks
-      // toggling twice and appearing to do nothing.
       const target = event.target;
       if (target instanceof HTMLSelectElement || target instanceof HTMLButtonElement) return;
 
       if (event.code === 'Space') {
-        event.preventDefault(); // Space scrolls the page by default.
+        event.preventDefault();
         handlers.onTogglePlay();
       } else if (event.key === 'r' || event.key === 'R') {
         handlers.onReset();
