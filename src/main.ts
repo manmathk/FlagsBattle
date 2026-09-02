@@ -27,6 +27,7 @@ const SOUND_LIMITS = {
 /** Browser-native speech synthesis with an iOS/Safari user-gesture priming step. */
 class WinnerVoice {
   private enabled = false;
+  private primed = false;
   private selectedVoice: SpeechSynthesisVoice | undefined;
 
   constructor() {
@@ -45,29 +46,35 @@ class WinnerVoice {
   }
 
   /**
-   * Must be called from a real user gesture on iOS Safari before later,
-   * timer-driven speech is allowed to play.
+   * iOS Safari needs speechSynthesis to be touched from a real user gesture
+   * before timer-driven speech can play. An empty utterance is intentionally
+   * spoken here to prime that permission/state.
    */
   unlock(): void {
     if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
 
     this.enabled = true;
-    const synth = window.speechSynthesis;
-    synth.cancel();
+    if (this.primed) return;
 
-    // iOS Safari can keep speech muted until the speech engine has been
-    // primed from a user gesture. Queue a silent utterance during that gesture.
-    const primer = new SpeechSynthesisUtterance(' ');
+    const synth = window.speechSynthesis;
+    synth.getVoices();
+    synth.resume();
+
+    // Do NOT call cancel() here. WebKit processes cancellation asynchronously,
+    // and a cancel immediately followed by speak() can remove the new utterance.
+    const primer = new SpeechSynthesisUtterance('');
     primer.lang = 'en-US';
-    primer.volume = 0;
+    primer.volume = 1;
+    primer.rate = 1;
     if (this.selectedVoice) primer.voice = this.selectedVoice;
+
     synth.speak(primer);
+    this.primed = true;
   }
 
   speakRoundWinner(country: string, roundNumber: number): void {
     if (!this.enabled || !('speechSynthesis' in window)) return;
-    const text = `Round ${roundNumber} winner: ${country}!`;
-    this.speak(text, false);
+    this.speak(`Round ${roundNumber} winner: ${country}!`, false);
   }
 
   speakChampion(country: string): void {
@@ -77,7 +84,7 @@ class WinnerVoice {
 
   private speak(text: string, champion: boolean): void {
     const synth = window.speechSynthesis;
-    synth.cancel();
+    synth.resume();
 
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
@@ -85,6 +92,7 @@ class WinnerVoice {
     utterance.pitch = champion ? 1.05 : 1;
     if (this.selectedVoice) utterance.voice = this.selectedVoice;
 
+    // Queue rather than cancel. This is more reliable on iOS Safari.
     synth.speak(utterance);
   }
 }
@@ -172,9 +180,12 @@ const main = async (): Promise<void> => {
   controls.setPlaying(loop.running);
   controls.setMuted(muted);
 
-  // Prime native speech on the first real touch/click. This is required by
-  // iOS Safari so winner announcements can play later without another tap.
-  window.addEventListener('pointerdown', () => winnerVoice.unlock(), { once: true, passive: true });
+  // Prime native speech on the first real touch/click. Safari/iOS requires
+  // the initial utterance itself to originate from user interaction.
+  const primeVoice = (): void => winnerVoice.unlock();
+  window.addEventListener('pointerdown', primeVoice, { once: true, passive: true });
+  window.addEventListener('touchstart', primeVoice, { once: true, passive: true });
+  window.addEventListener('click', primeVoice, { once: true, passive: true });
   window.addEventListener('resize', layoutArena);
 
   const tick = (dt: number): void => {
