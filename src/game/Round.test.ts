@@ -3,10 +3,16 @@ import { Round } from './Round';
 import { NormalMode } from '../modes/NormalMode';
 import { LightningMode } from '../modes/LightningMode';
 import type { ModeContext } from '../modes/GameMode';
-import { SIM } from '../config';
+import { bodyRadiusFor, SIM } from '../config';
 
 const codes = (n: number) => Array.from({ length: n }, (_, i) => `c${i}`);
 const DT = SIM.fixedStep;
+
+// Round tests use 40 flags, so use a proportionally larger test arena to keep
+// the larger production ball radius from making the fixture impossible to spawn.
+const TEST_FLAG_COUNT = 40;
+const TEST_ARENA_RADIUS = 900;
+const TEST_BODY_RADIUS = bodyRadiusFor(TEST_FLAG_COUNT, TEST_ARENA_RADIUS);
 
 const runToEnd = (round: Round, maxSeconds = SIM.roundCapSeconds * 2) => {
   const steps = Math.round(maxSeconds / DT);
@@ -15,11 +21,22 @@ const runToEnd = (round: Round, maxSeconds = SIM.roundCapSeconds * 2) => {
 };
 
 describe('Round', () => {
+  const createRound = (
+    mode: NormalMode | LightningMode,
+    seed: number,
+  ) => {
+    const round = new Round({ mode, flagCodes: codes(TEST_FLAG_COUNT), seed });
+    // Round owns the default arena radius; enlarge it here only for this test
+    // fixture so 40 larger bodies can be spawned without overlap.
+    round.world.arena.radius = TEST_ARENA_RADIUS;
+    return round;
+  };
+
   it('puts one body in the arena per flag code', () => {
-    const round = new Round({ mode: new NormalMode(), flagCodes: codes(40), seed: 1 });
-    expect(round.world.bodies).toHaveLength(40);
-    expect(round.world.bodies.map((b) => b.flagCode)).toEqual(codes(40));
-    expect(round.world.aliveCount).toBe(40);
+    const round = createRound(new NormalMode(), 1);
+    expect(round.world.bodies).toHaveLength(TEST_FLAG_COUNT);
+    expect(round.world.bodies.map((b) => b.flagCode)).toEqual(codes(TEST_FLAG_COUNT));
+    expect(round.world.aliveCount).toBe(TEST_FLAG_COUNT);
   });
 
   it('refuses to start a round that cannot have a winner', () => {
@@ -29,7 +46,7 @@ describe('Round', () => {
   });
 
   it('gives flags a starting velocity so the pack is never inert', () => {
-    const round = new Round({ mode: new NormalMode(), flagCodes: codes(40), seed: 1 });
+    const round = createRound(new NormalMode(), 1);
     for (const body of round.world.bodies) {
       const speed = Math.hypot(body.vel.x, body.vel.y);
       expect(speed).toBeGreaterThanOrEqual(SIM.spawnSpeed.min - 0.001);
@@ -38,21 +55,21 @@ describe('Round', () => {
   });
 
   it('resolves with exactly one winner', () => {
-    const round = runToEnd(new Round({ mode: new NormalMode(), flagCodes: codes(40), seed: 3 }));
+    const round = runToEnd(createRound(new NormalMode(), 3));
     expect(round.status).toBe('resolved');
     expect(round.winner).not.toBeNull();
-    expect(codes(40)).toContain(round.winner!.flagCode);
+    expect(codes(TEST_FLAG_COUNT)).toContain(round.winner!.flagCode);
   });
 
   it('produces the same winner for the same seed', () => {
-    const a = runToEnd(new Round({ mode: new NormalMode(), flagCodes: codes(40), seed: 77 }));
-    const b = runToEnd(new Round({ mode: new NormalMode(), flagCodes: codes(40), seed: 77 }));
+    const a = runToEnd(createRound(new NormalMode(), 77));
+    const b = runToEnd(createRound(new NormalMode(), 77));
     expect(a.winner!.flagCode).toBe(b.winner!.flagCode);
     expect(a.elapsed).toBeCloseTo(b.elapsed, 9);
   });
 
   it('ignores further steps once resolved', () => {
-    const round = runToEnd(new Round({ mode: new LightningMode(), flagCodes: codes(40), seed: 5 }));
+    const round = runToEnd(createRound(new LightningMode(), 5));
     const at = round.elapsed;
     round.step(DT);
     round.step(DT);
@@ -60,7 +77,7 @@ describe('Round', () => {
   });
 
   it('does not engage sudden death during a normal-length round', () => {
-    const round = new Round({ mode: new NormalMode(), flagCodes: codes(40), seed: 2 });
+    const round = createRound(new NormalMode(), 2);
     for (let i = 0; i < 100; i++) round.step(DT);
     expect(round.suddenDeath).toBe(false);
   });
@@ -70,7 +87,7 @@ describe('Round', () => {
     // well as frozen, because orbiting flags escape even a stationary gap.
     const stalled = new (class extends NormalMode {
       override onRoundStart(ctx: ModeContext): void {
-        ctx.world.arena.radius = SIM.arenaRadius;
+        ctx.world.arena.radius = TEST_ARENA_RADIUS;
         ctx.world.arena.gap = null;
       }
 
@@ -78,9 +95,15 @@ describe('Round', () => {
         /* sealed, frozen arena: nothing can leave */
       }
     })();
-    const round = new Round({ mode: stalled, flagCodes: codes(40), seed: 2 });
+    const round = new Round({ mode: stalled, flagCodes: codes(TEST_FLAG_COUNT), seed: 2 });
     const steps = Math.round((SIM.roundCapSeconds + 1) / DT);
     for (let i = 0; i < steps && round.status === 'running'; i++) round.step(DT);
     expect(round.suddenDeath).toBe(true);
+  });
+
+  it('uses the larger configured production ball radius', () => {
+    const productionRadius = bodyRadiusFor(197, SIM.arenaRadius);
+    expect(productionRadius).toBeGreaterThan(24);
+    expect(TEST_BODY_RADIUS).toBeGreaterThan(24);
   });
 });
