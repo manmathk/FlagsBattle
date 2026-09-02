@@ -18,7 +18,7 @@ export const SIM = {
   maxSpeed: 2000,
   arenaRadius: 460,
   /** Target fraction of arena area covered by flags; drives body radius. */
-  packingDensity: 0.55,
+  packingDensity: 0.8,
   /** Hard cap before sudden death begins. A safety net, not the expected length. */
   roundCapSeconds: 150,
   /** Arena contraction during sudden death, px/s (Normal and Chaos). */
@@ -34,7 +34,7 @@ export const SIM = {
  *
  * Gravity points at the arena centre rather than downward, so flags circulate
  * instead of settling into a dead pile at the bottom. `centripetal` alone would
- * collapse them into the middle where the gap cannot reach them; `tangential` is
+ * collapse them into the middle where the gap cannot reach it; `tangential` is
  * what makes it an orbit, and the balance is tuned so the steady-state radius
  * sits at the wall — a centrifuge, with flags riding the ring where the gap can
  * take them.
@@ -69,7 +69,7 @@ export const FLAG_COUNT = FLAGS.length;
  * Clamped, because the density formula grows the radius as the count *falls*: a
  * 20-flag round would otherwise ask for 76px bodies, which the spawn lattice
  * cannot lay out inside the arena. The clamp only ever binds below ~40 flags, so
- * it never affects the shipped 200-flag round (24px).
+ * it never affects the shipped 200-flag round (29px).
  */
 export const bodyRadiusFor = (
   count: number,
