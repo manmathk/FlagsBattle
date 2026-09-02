@@ -9,7 +9,7 @@ describe('THEMES', () => {
   it('includes the white light theme', () => {
     const white = themeById('white');
     expect(white.label).toBe('☀️ White');
-    expect(white.bg).toEqual([0xffffff, 0xf1f5f9]);
+    expect(white.bg).toEqual([0xe8f1f8, 0xffffff]);
   });
 
   it('has unique ids', () => {
