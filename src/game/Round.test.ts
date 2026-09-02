@@ -8,8 +8,6 @@ import { bodyRadiusFor, SIM } from '../config';
 const codes = (n: number) => Array.from({ length: n }, (_, i) => `c${i}`);
 const DT = SIM.fixedStep;
 
-// Round tests use 40 flags, so use a proportionally larger test arena to keep
-// the larger production ball radius from making the fixture impossible to spawn.
 const TEST_FLAG_COUNT = 40;
 const TEST_ARENA_RADIUS = 900;
 const TEST_BODY_RADIUS = bodyRadiusFor(TEST_FLAG_COUNT, TEST_ARENA_RADIUS);
@@ -21,16 +19,13 @@ const runToEnd = (round: Round, maxSeconds = SIM.roundCapSeconds * 2) => {
 };
 
 describe('Round', () => {
-  const createRound = (
-    mode: NormalMode | LightningMode,
-    seed: number,
-  ) => {
-    const round = new Round({ mode, flagCodes: codes(TEST_FLAG_COUNT), seed });
-    // Round owns the default arena radius; enlarge it here only for this test
-    // fixture so 40 larger bodies can be spawned without overlap.
-    round.world.arena.radius = TEST_ARENA_RADIUS;
-    return round;
-  };
+  const createRound = (mode: NormalMode | LightningMode, seed: number) =>
+    new Round({
+      mode,
+      flagCodes: codes(TEST_FLAG_COUNT),
+      seed,
+      arenaRadius: TEST_ARENA_RADIUS,
+    });
 
   it('puts one body in the arena per flag code', () => {
     const round = createRound(new NormalMode(), 1);
@@ -83,8 +78,6 @@ describe('Round', () => {
   });
 
   it('engages sudden death once the cap is passed', () => {
-    // A mode that genuinely cannot eliminate anyone: the ring must be sealed as
-    // well as frozen, because orbiting flags escape even a stationary gap.
     const stalled = new (class extends NormalMode {
       override onRoundStart(ctx: ModeContext): void {
         ctx.world.arena.radius = TEST_ARENA_RADIUS;
@@ -95,7 +88,12 @@ describe('Round', () => {
         /* sealed, frozen arena: nothing can leave */
       }
     })();
-    const round = new Round({ mode: stalled, flagCodes: codes(TEST_FLAG_COUNT), seed: 2 });
+    const round = new Round({
+      mode: stalled,
+      flagCodes: codes(TEST_FLAG_COUNT),
+      seed: 2,
+      arenaRadius: TEST_ARENA_RADIUS,
+    });
     const steps = Math.round((SIM.roundCapSeconds + 1) / DT);
     for (let i = 0; i < steps && round.status === 'running'; i++) round.step(DT);
     expect(round.suddenDeath).toBe(true);
