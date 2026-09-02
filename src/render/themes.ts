@@ -30,7 +30,10 @@ export const THEMES: readonly Theme[] = [
   { id: 'shadow', label: '🌚 Shadow', bg: [0x060608, 0x16161c], ring: 0x6b7280, glow: 0x9ca3af, particle: 0xd1d5db, accent: 0x9ca3af },
   { id: 'lava', label: '🌋 Lava', bg: [0x1a0500, 0x4a0f00], ring: 0xff6b1a, glow: 0xffb347, particle: 0xffd08a, accent: 0xff6b1a },
   { id: 'deepsea', label: '🌊 DeepSea', bg: [0x001014, 0x01303a], ring: 0x06b6d4, glow: 0x22d3ee, particle: 0xa5f3fc, accent: 0x06b6d4 },
-  { id: 'white', label: '☀️ White', bg: [0xffffff, 0xf1f5f9], ring: 0x334155, glow: 0x64748b, particle: 0x94a3b8, accent: 0x2563eb, light: true },
+  // A cool, high-contrast light theme rather than a flat white canvas.
+  // The subtle blue-gray gradient keeps the arena visible while the blue
+  // accent/glow gives the flags and ring some depth.
+  { id: 'white', label: '☀️ White', bg: [0xe8f1f8, 0xffffff], ring: 0x334155, glow: 0x38bdf8, particle: 0x2563eb, accent: 0x2563eb, light: true },
 ];
 
 export const DEFAULT_THEME_ID = 'space';
