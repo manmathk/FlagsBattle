@@ -5,7 +5,6 @@ const ctx = canvas.getContext('2d')!;
 const play = document.querySelector<HTMLButtonElement>('#play')!;
 const restart = document.querySelector<HTMLButtonElement>('#restart')!;
 const status = document.querySelector<HTMLDivElement>('#status')!;
-const countdown = document.querySelector<HTMLDivElement>('#countdown')!;
 const score = document.querySelector<HTMLDivElement>('#score')!;
 
 const redSelect = document.querySelector<HTMLSelectElement>('#red-select')!;
@@ -30,7 +29,7 @@ redSelect.value = 'IN';
 blueSelect.value = 'US';
 
 const TAU = Math.PI * 2;
-const GRAVITY = 185; // px/s²; the supplied pygame 0.1/frame scaled to a stable fixed timestep.
+const GRAVITY = 185;
 const BOUNCE = 0.94;
 const BALL_RADIUS = 24;
 const MAX_SPEED = 760;
@@ -49,7 +48,6 @@ let accumulator = 0;
 let lastTime = performance.now();
 let redWins = 0;
 let blueWins = 0;
-let winner: 'red' | 'blue' | null = null;
 
 class CountryBall {
   x = 0;
@@ -120,7 +118,6 @@ function resize(): void {
   canvas.width = Math.round(width * dpr);
   canvas.height = Math.round(height * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
   centerX = width / 2;
   centerY = height * 0.49;
   arenaRadius = Math.min(width * 0.43, height * 0.36, 215);
@@ -140,7 +137,6 @@ function collideBalls(): void {
   if (dist === 0) { dx = 1; dy = 0; dist = 1; }
   const minDist = BALL_RADIUS * 2;
   if (dist >= minDist) return;
-
   const nx = dx / dist;
   const ny = dy / dist;
   const overlap = minDist - dist;
@@ -148,7 +144,6 @@ function collideBalls(): void {
   red.y -= ny * overlap * 0.5;
   blue.x += nx * overlap * 0.5;
   blue.y += ny * overlap * 0.5;
-
   const rel = (blue.vx - red.vx) * nx + (blue.vy - red.vy) * ny;
   if (rel >= 0) return;
   const impulse = -(1 + 0.98) * rel / 2;
@@ -169,7 +164,6 @@ function roundStep(dt: number): void {
 function finishRound(w: 'red' | 'blue'): void {
   if (!running) return;
   running = false;
-  winner = w;
   if (w === 'red') redWins++; else blueWins++;
   score.textContent = `${redWins} — ${blueWins}`;
   const name = w === 'red' ? redName.textContent : blueName.textContent;
@@ -178,7 +172,6 @@ function finishRound(w: 'red' | 'blue'): void {
 }
 
 function startRound(): void {
-  winner = null;
   elapsed = 0;
   accumulator = 0;
   resetBalls();
@@ -194,7 +187,6 @@ function drawBackground(): void {
   g.addColorStop(1, '#040b14');
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, width, height);
-
   ctx.save();
   ctx.globalAlpha = 0.13;
   for (let i = 0; i < 45; i++) {
@@ -224,7 +216,6 @@ function drawArena(): void {
   ctx.arc(centerX, centerY, arenaRadius - 10, 0, TAU);
   ctx.stroke();
   ctx.restore();
-
   ctx.save();
   ctx.setLineDash([7, 10]);
   ctx.strokeStyle = 'rgba(255,255,255,.15)';
@@ -247,7 +238,6 @@ function drawBall(ball: CountryBall, flag: string): void {
     ctx.arc(p.x, p.y, BALL_RADIUS * (0.5 + i / ball.trail.length * 0.3), 0, TAU);
     ctx.fill();
   }
-
   const glow = ctx.createRadialGradient(ball.x, ball.y, BALL_RADIUS * .2, ball.x, ball.y, BALL_RADIUS * 2.2);
   glow.addColorStop(0, ball.team === 'red' ? 'rgba(255,59,92,.45)' : 'rgba(61,139,255,.45)');
   glow.addColorStop(1, 'rgba(0,0,0,0)');
@@ -256,7 +246,6 @@ function drawBall(ball: CountryBall, flag: string): void {
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, BALL_RADIUS * 2.2, 0, TAU);
   ctx.fill();
-
   ctx.translate(ball.x, ball.y);
   ctx.rotate(ball.angle);
   ctx.beginPath();
@@ -267,7 +256,6 @@ function drawBall(ball: CountryBall, flag: string): void {
   ctx.textBaseline = 'middle';
   ctx.fillText(flag, 0, 1);
   ctx.restore();
-
   ctx.save();
   ctx.translate(ball.x, ball.y);
   ctx.beginPath();
@@ -283,7 +271,6 @@ function draw(): void {
   drawArena();
   drawBall(red, redFlag.textContent || '🇮🇳');
   drawBall(blue, blueFlag.textContent || '🇺🇸');
-
   if (running) {
     ctx.save();
     ctx.fillStyle = 'rgba(255,255,255,.55)';
@@ -340,6 +327,8 @@ redSelect.addEventListener('change', () => updateCountry('red'));
 blueSelect.addEventListener('change', () => updateCountry('blue'));
 window.addEventListener('resize', resize);
 
+updateCountry('red');
+updateCountry('blue');
 resize();
 draw();
 requestAnimationFrame(frame);
