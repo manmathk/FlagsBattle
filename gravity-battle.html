@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#07111f" />
+    <title>FlagsBattle — Gravity Arena</title>
+    <meta name="description" content="A mobile-friendly two-country gravity battle inside a circular arena." />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header class="topbar">
+        <div>
+          <div class="eyebrow">FLAGSBATTLE</div>
+          <h1>GRAVITY ARENA</h1>
+        </div>
+        <button id="restart" class="icon-button" type="button" aria-label="Restart battle">↻</button>
+      </header>
+
+      <section class="scoreboard" aria-label="Battle score">
+        <div class="fighter fighter-red">
+          <span id="red-flag" class="fighter-flag">🇮🇳</span>
+          <div><strong id="red-name">INDIA</strong><small>RED</small></div>
+        </div>
+        <div class="score" id="score">0 — 0</div>
+        <div class="fighter fighter-blue">
+          <div class="fighter-copy"><strong id="blue-name">USA</strong><small>BLUE</small></div>
+          <span id="blue-flag" class="fighter-flag">🇺🇸</span>
+        </div>
+      </section>
+
+      <section class="arena-wrap">
+        <canvas id="arena" aria-label="Gravity arena game"></canvas>
+        <div class="status" id="status">READY</div>
+        <div class="countdown" id="countdown" hidden>3</div>
+      </section>
+
+      <section class="controls">
+        <button id="play" class="primary" type="button">▶ START BATTLE</button>
+        <div class="selectors">
+          <label>RED <select id="red-select"></select></label>
+          <label>BLUE <select id="blue-select"></select></label>
+        </div>
+        <p>Gravity is on. Watch the flags ricochet around the ring.</p>
+      </section>
+    </main>
+    <script type="module" src="/src/gravity-battle/main.ts"></script>
+  </body>
+</html>
