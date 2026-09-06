@@ -22,9 +22,6 @@ const required = <T extends HTMLElement>(id: string): T => {
 export class Hud {
   private readonly modeBadge = required('mode-badge');
   private readonly aliveBadge = required('alive-badge');
-  private readonly lastRound = required('last-round');
-  private readonly lastWinnerChip = required('last-winner-chip');
-  private readonly lastWinnerName = required('last-winner-name');
   private readonly topTitle = required('top-title');
   private readonly topList = required('top-list');
   private readonly seriesBlock = required('series-block');
@@ -47,10 +44,6 @@ export class Hud {
   }
   setMode(label: string): void { this.modeBadge.textContent = label; }
   setAlive(alive: number, total: number): void { this.aliveBadge.textContent = `${alive} / ${total} alive`; }
-  setLastWinner(flagCode: string | null): void {
-    if (flagCode === null) { this.lastRound.hidden = true; return; }
-    this.lastWinnerChip.setAttribute('style', flagBackground(flagCode, 30)); this.lastWinnerName.textContent = nameOf(flagCode); this.lastRound.hidden = false;
-  }
   setTopFive(standings: readonly Standing[], roundsPlayed: number): void {
     this.topTitle.textContent = roundsPlayed === 0 ? '🏆 Top 5 Winners' : `🏆 Top 5 Winners · ${roundsPlayed} ${roundsPlayed === 1 ? 'round' : 'rounds'}`;
     if (standings.length === 0) {
@@ -71,7 +64,10 @@ export class Hud {
     this.seriesList.replaceChildren(...standings.slice(0, 3).map((standing) => {
       const item = document.createElement('li'); item.className = 'strip-item'; item.title = `${nameOf(standing.flagCode)} — ${standing.wins} of ${target}`;
       const chip = document.createElement('span'); chip.className = 'flag-chip'; chip.setAttribute('style', flagBackground(standing.flagCode, 22));
-      const pips = document.createElement('span'); pips.className = 'pips'; for (let i = 0; i < target; i++) { const pip = document.createElement('span'); pip.className = i < standing.wins ? 'pip won' : 'pip'; pips.appendChild(pip); }
+      const pips = document.createElement('span'); pipLoop: for (let i = 0; i < target; i++) { const pip = document.createElement('span'); pip.className = i < standing.wins ? 'pip won' : 'pip'; }
+      void pipLoop;
+      const pips = document.createElement('span'); pips.className = 'pips';
+      for (let i = 0; i < target; i++) { const pip = document.createElement('span'); pip.className = i < standing.wins ? 'pip won' : 'pip'; pips.appendChild(pip); }
       item.append(chip, pips); return item;
     }));
   }
