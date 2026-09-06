@@ -64,8 +64,6 @@ export class Hud {
     this.seriesList.replaceChildren(...standings.slice(0, 3).map((standing) => {
       const item = document.createElement('li'); item.className = 'strip-item'; item.title = `${nameOf(standing.flagCode)} — ${standing.wins} of ${target}`;
       const chip = document.createElement('span'); chip.className = 'flag-chip'; chip.setAttribute('style', flagBackground(standing.flagCode, 22));
-      const pips = document.createElement('span'); pipLoop: for (let i = 0; i < target; i++) { const pip = document.createElement('span'); pip.className = i < standing.wins ? 'pip won' : 'pip'; }
-      void pipLoop;
       const pips = document.createElement('span'); pips.className = 'pips';
       for (let i = 0; i < target; i++) { const pip = document.createElement('span'); pip.className = i < standing.wins ? 'pip won' : 'pip'; pips.appendChild(pip); }
       item.append(chip, pips); return item;
@@ -73,13 +71,6 @@ export class Hud {
   }
   showSeries(visible: boolean): void { this.seriesBlock.hidden = !visible; }
   showChaosEvent(kind: ChaosEventKind): void { this.eventLabel.textContent = EVENT_LABELS[kind]; this.eventLabel.hidden = false; window.clearTimeout(this.eventTimer); this.eventTimer = window.setTimeout(() => { this.eventLabel.hidden = true; }, 2200); }
-  showElimination(flagCode: string, holdMs = 1100): void {
-    const kickerEl = document.createElement('div'); kickerEl.className = 'banner-kicker'; kickerEl.textContent = 'ELIMINATED';
-    const flagEl = document.createElement('div'); flagEl.className = 'banner-flag'; flagEl.setAttribute('style', flagBackground(flagCode, 112));
-    const nameEl = document.createElement('div'); nameEl.className = 'banner-name'; nameEl.textContent = nameOf(flagCode);
-    this.banner.className = 'banner elimination'; this.banner.replaceChildren(kickerEl, flagEl, nameEl); this.banner.hidden = false;
-    window.clearTimeout(this.bannerTimer); this.bannerTimer = window.setTimeout(() => { this.banner.hidden = true; }, holdMs);
-  }
   showWinner(flagCode: string, kicker: string, isChampion: boolean, holdMs: number): void {
     const kickerEl = document.createElement('div'); kickerEl.className = 'banner-kicker'; kickerEl.textContent = kicker;
     const flagEl = document.createElement('div'); flagEl.className = 'banner-flag'; flagEl.setAttribute('style', flagBackground(flagCode, 112));
