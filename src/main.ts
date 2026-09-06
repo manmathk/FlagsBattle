@@ -24,7 +24,7 @@ const SOUND_LIMITS = {
   elimination: { maxPerFrame: 2, cooldownMs: 30 },
 } as const;
 
-/** Browser speech synthesis for winners and elimination announcements. */
+/** Browser speech synthesis for winners only. */
 class WinnerVoice {
   private enabled = false;
   private selectedVoice: SpeechSynthesisVoice | undefined;
@@ -73,11 +73,6 @@ class WinnerVoice {
   toggleFromUserGesture(): void {
     if (this.enabled) this.disable();
     else this.enableFromUserGesture();
-  }
-
-  speakElimination(country: string): void {
-    if (!this.enabled || !('speechSynthesis' in window)) return;
-    this.queue(`${country} eliminated.`, false);
   }
 
   speakRoundWinner(country: string, roundNumber: number): void {
@@ -225,12 +220,6 @@ const main = async (): Promise<void> => {
         case 'lightning': sfx.lightning(); break;
         case 'eliminated': {
           if (budget.allow('elimination')) sfx.elimination();
-          const body = world.bodies[event.bodyId];
-          if (body !== undefined) {
-            const country = countryNameFromCode(body.flagCode);
-            hud.showElimination(body.flagCode);
-            window.requestAnimationFrame(() => winnerVoice.speakElimination(country));
-          }
           break;
         }
         case 'collision':
@@ -242,8 +231,6 @@ const main = async (): Promise<void> => {
     renderer.frame(world, loop.alpha, dt, events);
     hud.setAlive(world.aliveCount, world.bodies.length);
   };
-
-  controls.setMuted(muted);
 
   if (import.meta.env.DEV) {
     Object.assign(window, {
