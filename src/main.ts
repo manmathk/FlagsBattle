@@ -44,7 +44,6 @@ class WinnerVoice {
     window.speechSynthesis.addEventListener('voiceschanged', chooseVoice);
   }
 
-  /** Enable voice from a real user gesture. */
   enableFromUserGesture(): void {
     if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
 
@@ -64,9 +63,7 @@ class WinnerVoice {
 
   disable(): void {
     this.enabled = false;
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   }
 
   isEnabled(): boolean {
@@ -130,8 +127,7 @@ const main = async (): Promise<void> => {
 
   const countryNameFromCode = (code: string): string => flagNames.get(code) ?? code.toUpperCase();
 
-  const applySoundState = (): void => {
-    controls.setMuted(muted);
+  const startAudioAfterGesture = (): void => {
     void audio.unlock().then(() => {
       audio.setMuted(muted);
       if (muted) soundtrack.stop();
@@ -182,18 +178,15 @@ const main = async (): Promise<void> => {
       onTogglePlay: () => {
         loop.toggle();
         controls.setPlaying(loop.running);
-        if (loop.running && !muted) applySoundState();
+        if (loop.running) startAudioAfterGesture();
+        else soundtrack.stop();
       },
-      onReset: () => { loop.reset(); match.reset(); },
+      onReset: () => { loop.reset(); match.reset(); soundtrack.stop(); },
       onToggleSound: () => {
         muted = !muted;
         controls.setMuted(muted);
         savePreferences(storage, { modeId: match.mode.id, themeId: theme.id, muted });
-        void audio.unlock().then(() => {
-          audio.setMuted(muted);
-          if (muted) soundtrack.stop();
-          else soundtrack.start();
-        });
+        startAudioAfterGesture();
       },
       onVoiceEnable: () => {
         winnerVoice.toggleFromUserGesture();
@@ -250,8 +243,6 @@ const main = async (): Promise<void> => {
     hud.setAlive(world.aliveCount, world.bodies.length);
   };
 
-  // Apply the persisted sound preference once the controls and audio objects exist.
-  // No playback is forced here; browsers require a user gesture for audio.
   controls.setMuted(muted);
 
   if (import.meta.env.DEV) {
