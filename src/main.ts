@@ -24,7 +24,7 @@ const SOUND_LIMITS = {
   elimination: { maxPerFrame: 2, cooldownMs: 30 },
 } as const;
 
-/** Browser speech synthesis with an explicit user-gesture activation path for iOS Safari. */
+/** Browser speech synthesis for winners and elimination announcements. */
 class WinnerVoice {
   private enabled = false;
   private selectedVoice: SpeechSynthesisVoice | undefined;
@@ -69,6 +69,11 @@ class WinnerVoice {
     return this.enabled;
   }
 
+  speakElimination(country: string): void {
+    if (!this.enabled || !('speechSynthesis' in window)) return;
+    this.queue(`${country} eliminated.`, false);
+  }
+
   speakRoundWinner(country: string, roundNumber: number): void {
     if (!this.enabled || !('speechSynthesis' in window)) return;
     this.queue(`Round ${roundNumber} winner: ${country}!`, false);
@@ -107,6 +112,7 @@ const main = async (): Promise<void> => {
   hud.applyTheme(theme);
   const renderer = await Renderer.create(canvas, theme);
   const flagCodes = FLAGS.map((flag) => flag.code);
+  const flagNames = new Map(FLAGS.map((flag) => [flag.code, flag.name] as const));
   const loop = new GameLoop();
   const audio = new AudioEngine();
   const soundtrack = createSoundtrack(audio);
@@ -114,6 +120,8 @@ const main = async (): Promise<void> => {
   const budget = new SoundBudget(SOUND_LIMITS);
   const winnerVoice = new WinnerVoice();
   let muted = preferences.muted;
+
+  const countryNameFromCode = (code: string): string => flagNames.get(code) ?? code.toUpperCase();
 
   const layoutArena = (): void => {
     const strip = document.getElementById('results')?.getBoundingClientRect();
@@ -203,7 +211,12 @@ const main = async (): Promise<void> => {
       switch (event.type) {
         case 'chaosEvent': hud.showChaosEvent(event.kind); sfx.chaosEvent(); break;
         case 'lightning': sfx.lightning(); break;
-        case 'eliminated': if (budget.allow('elimination')) sfx.elimination(); break;
+        case 'eliminated': {
+          if (budget.allow('elimination')) sfx.elimination();
+          const body = world.bodies[event.bodyId];
+          if (body !== undefined) winnerVoice.speakElimination(countryNameFromCode(body.flagCode));
+          break;
+        }
         case 'collision':
         case 'wallBounce': if (budget.allow('impact')) sfx.impact(Math.min(1, event.impact / SIM.maxSpeed)); break;
       }
