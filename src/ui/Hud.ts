@@ -77,6 +77,13 @@ export class Hud {
   }
   showSeries(visible: boolean): void { this.seriesBlock.hidden = !visible; }
   showChaosEvent(kind: ChaosEventKind): void { this.eventLabel.textContent = EVENT_LABELS[kind]; this.eventLabel.hidden = false; window.clearTimeout(this.eventTimer); this.eventTimer = window.setTimeout(() => { this.eventLabel.hidden = true; }, 2200); }
+  showElimination(flagCode: string, holdMs = 1100): void {
+    const kickerEl = document.createElement('div'); kickerEl.className = 'banner-kicker'; kickerEl.textContent = 'ELIMINATED';
+    const flagEl = document.createElement('div'); flagEl.className = 'banner-flag'; flagEl.setAttribute('style', flagBackground(flagCode, 112));
+    const nameEl = document.createElement('div'); nameEl.className = 'banner-name'; nameEl.textContent = nameOf(flagCode);
+    this.banner.className = 'banner elimination'; this.banner.replaceChildren(kickerEl, flagEl, nameEl); this.banner.hidden = false;
+    window.clearTimeout(this.bannerTimer); this.bannerTimer = window.setTimeout(() => { this.banner.hidden = true; }, holdMs);
+  }
   showWinner(flagCode: string, kicker: string, isChampion: boolean, holdMs: number): void {
     const kickerEl = document.createElement('div'); kickerEl.className = 'banner-kicker'; kickerEl.textContent = kicker;
     const flagEl = document.createElement('div'); flagEl.className = 'banner-flag'; flagEl.setAttribute('style', flagBackground(flagCode, 112));
