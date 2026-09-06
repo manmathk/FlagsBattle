@@ -5,23 +5,83 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Which Country Will WIN? — YouTube Chat Game</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#050616;color:#fff;font-family:Arial,sans-serif;overflow-x:hidden}.wrap{max-width:1100px;margin:auto;min-height:100vh;background:radial-gradient(circle at 50% 18%,#24105d 0,#10082e 32%,#050616 72%);padding-bottom:28px}.hero{padding:28px 18px 15px;border-top:2px solid #7b6224;position:relative;text-align:center}.title{font-size:clamp(30px,6vw,58px);font-weight:1000;letter-spacing:-2px;text-shadow:0 4px 18px #000}.title span{color:#ffd21c}.target{position:absolute;right:18px;top:14px;text-align:center;font-weight:900;color:#ffd21c;font-size:14px;line-height:1}.target b{display:block;font-size:27px;margin-top:4px}.gear{position:absolute;left:18px;top:12px;border:1px solid #51476d;background:#15102e;color:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;font-weight:800}.bar{margin:22px auto 10px;height:16px;max-width:720px;border-radius:12px;background:#25234b;border:1px solid #413b70;overflow:hidden;box-shadow:0 0 18px #0008}.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6b3cff,#ff2bbd,#ffd21c);transition:width .35s}.status{font-size:12px;color:#aaa;margin:8px 0}.arena{padding:14px 10px 8px;border-top:2px solid #f02ab7;border-bottom:2px solid #f02ab7;background:linear-gradient(#080724,#030411)}.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px}.cell{position:relative;text-align:center;min-width:0;padding:7px 5px 10px;border:1px solid #25294b;border-radius:12px;background:linear-gradient(180deg,#11143a,#090b22);overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s}.cell .rank{font-size:10px;color:#8f8ca8;height:13px;font-weight:900}.flag{font-size:clamp(42px,7vw,76px);height:82px;display:flex;align-items:center;justify-content:center;border-radius:9px;filter:drop-shadow(0 5px 8px #000);transition:transform .25s,filter .25s}.score{font-weight:1000;font-size:22px;color:#fff;margin-top:3px;text-shadow:0 2px 6px #000}.player{height:19px;margin-top:5px;font-size:11px;font-weight:900;color:#d9d7ec;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 7px;border-radius:8px;background:#05061588}.player:empty{visibility:hidden}.cell.top1{border-color:#ffd21c;box-shadow:0 0 15px #ffd21c44}.cell.top2{border-color:#d6d6e5}.cell.top3{border-color:#c77b30}.cell.changed{animation:countryHit .8s ease-out;z-index:3}.cell.changed .flag{animation:flagGlow .8s ease-out}.cell.changed .player{animation:namePop .8s ease-out}.cell.changed:after{content:'';position:absolute;inset:-40%;border-radius:50%;background:radial-gradient(circle,#fff9 0,#ffd21c44 12%,transparent 48%);animation:burst .8s ease-out;pointer-events:none}@keyframes countryHit{0%{transform:scale(1);box-shadow:0 0 0 #ffd21c00}18%{transform:scale(1.13);box-shadow:0 0 35px #ffd21c,0 0 80px #ff2bbd88}45%{transform:scale(1.07)}100%{transform:scale(1)}}@keyframes flagGlow{0%{transform:scale(1);filter:drop-shadow(0 5px 8px #000)}25%{transform:scale(1.28);filter:drop-shadow(0 0 18px #fff) drop-shadow(0 0 32px #ffd21c)}55%{transform:scale(1.08);filter:drop-shadow(0 0 12px #ff2bbd)}100%{transform:scale(1);filter:drop-shadow(0 5px 8px #000)}}@keyframes namePop{0%{transform:translateY(8px);opacity:0}25%{transform:translateY(0) scale(1.08);opacity:1}70%{opacity:1}100%{transform:translateY(-5px);opacity:0}}@keyframes burst{0%{transform:scale(.1);opacity:0}20%{opacity:1}100%{transform:scale(1.4);opacity:0}}.flashBanner{height:0;position:relative;z-index:10;text-align:center;pointer-events:none}.flashBanner span{display:inline-block;position:relative;top:-2px;padding:7px 15px;border-radius:20px;background:#ffd21c;color:#111;font-size:13px;font-weight:1000;box-shadow:0 0 25px #ffd21c;opacity:0;transform:scale(.6)}.flashBanner.show span{animation:banner .95s ease-out}@keyframes banner{0%{opacity:0;transform:scale(.6) translateY(8px)}18%,72%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:scale(1.08) translateY(-12px)}}.legend{padding:12px 10px;color:#9f9fb4;font-size:12px;text-align:center}.modal{display:none;position:fixed;inset:0;background:#000b;z-index:20;align-items:center;justify-content:center;padding:18px}.modal.open{display:flex}.box{width:min(520px,100%);background:#100c25;border:1px solid #4a3e72;border-radius:14px;padding:18px;box-shadow:0 20px 80px #000}.box h2{margin:0 0 5px}.box p{margin:0 0 15px;color:#aaa;font-size:12px}.box label{display:block;font-size:11px;color:#aaa;margin-top:10px}.box input{width:100%;margin-top:5px;padding:11px;border-radius:7px;border:1px solid #3b3760;background:#060616;color:#fff;font-size:14px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.buttons{display:flex;gap:8px;margin-top:15px}.buttons button{padding:10px 14px;border:0;border-radius:7px;font-weight:900;cursor:pointer}.save{background:#ffd21c;color:#111}.close,.clear{background:#302b4d;color:#fff}.note{margin-top:12px;color:#777;font-size:10px}@media(max-width:800px){.grid{grid-template-columns:repeat(4,1fr);gap:8px}.flag{font-size:52px;height:65px}.score{font-size:18px}.cell{padding:5px 3px 8px}}@media(max-width:500px){.title{padding-top:28px;font-size:31px}.target{right:10px}.gear{left:10px}.grid{grid-template-columns:repeat(3,1fr);gap:6px}.flag{font-size:45px;height:57px}.player{font-size:9px}.row{grid-template-columns:1fr}}
+*{box-sizing:border-box}
+body{margin:0;background:#050616;color:#fff;font-family:Arial,sans-serif;overflow-x:hidden}
+.wrap{max-width:1200px;margin:auto;min-height:100vh;background:radial-gradient(circle at 50% 18%,#24105d 0,#10082e 32%,#050616 72%);padding-bottom:28px}
+.hero{padding:28px 18px 15px;border-top:2px solid #7b6224;position:relative;text-align:center}
+.title{font-size:clamp(30px,6vw,58px);font-weight:1000;letter-spacing:-2px;text-shadow:0 4px 18px #000}
+.title span{color:#ffd21c}
+.target{position:absolute;right:18px;top:14px;text-align:center;font-weight:900;color:#ffd21c;font-size:14px;line-height:1}
+.target b{display:block;font-size:27px;margin-top:4px}
+.gear{position:absolute;left:18px;top:12px;border:1px solid #51476d;background:#15102e;color:#fff;border-radius:8px;padding:7px 10px;cursor:pointer;font-weight:800}
+.bar{margin:22px auto 10px;height:16px;max-width:760px;border-radius:12px;background:#25234b;border:1px solid #413b70;overflow:hidden;box-shadow:0 0 18px #0008}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#6b3cff,#ff2bbd,#ffd21c);transition:width .35s}
+.status{font-size:12px;color:#aaa;margin:8px 0}
+.arena{padding:14px 10px 8px;border-top:2px solid #f02ab7;border-bottom:2px solid #f02ab7;background:linear-gradient(#080724,#030411)}
+.grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:9px}
+.cell{position:relative;text-align:center;min-width:0;padding:6px 4px 9px;border:1px solid #25294b;border-radius:12px;background:linear-gradient(180deg,#11143a,#090b22);overflow:hidden;transition:transform .2s,border-color .2s,box-shadow .2s}
+.cell .rank{font-size:9px;color:#8f8ca8;height:12px;font-weight:900}
+.flag{font-size:clamp(39px,5.8vw,64px);height:72px;display:flex;align-items:center;justify-content:center;border-radius:9px;filter:drop-shadow(0 5px 8px #000);transition:transform .25s,filter .25s}
+.score{font-weight:1000;font-size:20px;color:#fff;margin-top:2px;text-shadow:0 2px 6px #000}
+.player{height:18px;margin-top:4px;font-size:10px;font-weight:900;color:#d9d7ec;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:3px 6px;border-radius:8px;background:#05061588;visibility:hidden;opacity:0}
+.cell.top1{border-color:#ffd21c;box-shadow:0 0 15px #ffd21c44}
+.cell.top2{border-color:#d6d6e5}
+.cell.top3{border-color:#c77b30}
+.cell.changed{animation:countryHit .8s ease-out;z-index:3}
+.cell.changed .flag{animation:flagGlow .8s ease-out}
+.cell.changed .player{visibility:visible;animation:namePop .85s ease-out}
+.cell.changed:after{content:'';position:absolute;inset:-40%;border-radius:50%;background:radial-gradient(circle,#fff9 0,#ffd21c44 12%,transparent 48%);animation:burst .8s ease-out;pointer-events:none}
+@keyframes countryHit{0%{transform:scale(1);box-shadow:0 0 0 #ffd21c00}18%{transform:scale(1.13);box-shadow:0 0 35px #ffd21c,0 0 80px #ff2bbd88}45%{transform:scale(1.07)}100%{transform:scale(1)}}
+@keyframes flagGlow{0%{transform:scale(1);filter:drop-shadow(0 5px 8px #000)}25%{transform:scale(1.28);filter:drop-shadow(0 0 18px #fff) drop-shadow(0 0 32px #ffd21c)}55%{transform:scale(1.08);filter:drop-shadow(0 0 12px #ff2bbd)}100%{transform:scale(1);filter:drop-shadow(0 5px 8px #000)}}
+@keyframes namePop{0%{transform:translateY(8px) scale(.85);opacity:0}20%{transform:translateY(0) scale(1.08);opacity:1}62%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-5px) scale(.95);opacity:0}}
+@keyframes burst{0%{transform:scale(.1);opacity:0}20%{opacity:1}100%{transform:scale(1.4);opacity:0}}
+.flashBanner{height:0;position:relative;z-index:10;text-align:center;pointer-events:none}
+.flashBanner span{display:inline-block;position:relative;top:-2px;padding:7px 15px;border-radius:20px;background:#ffd21c;color:#111;font-size:13px;font-weight:1000;box-shadow:0 0 25px #ffd21c;opacity:0;transform:scale(.6)}
+.flashBanner.show span{animation:banner .95s ease-out}
+@keyframes banner{0%{opacity:0;transform:scale(.6) translateY(8px)}18%,72%{opacity:1;transform:scale(1) translateY(0)}100%{opacity:0;transform:scale(1.08) translateY(-12px)}}
+.legend{padding:12px 10px;color:#9f9fb4;font-size:12px;text-align:center}
+.modal{display:none;position:fixed;inset:0;background:#000b;z-index:20;align-items:center;justify-content:center;padding:18px}.modal.open{display:flex}
+.box{width:min(520px,100%);background:#100c25;border:1px solid #4a3e72;border-radius:14px;padding:18px;box-shadow:0 20px 80px #000}
+.box h2{margin:0 0 5px}.box p{margin:0 0 15px;color:#aaa;font-size:12px}.box label{display:block;font-size:11px;color:#aaa;margin-top:10px}
+.box input{width:100%;margin-top:5px;padding:11px;border-radius:7px;border:1px solid #3b3760;background:#060616;color:#fff;font-size:14px}.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.buttons{display:flex;gap:8px;margin-top:15px}.buttons button{padding:10px 14px;border:0;border-radius:7px;font-weight:900;cursor:pointer}.save{background:#ffd21c;color:#111}.close,.clear{background:#302b4d;color:#fff}.note{margin-top:12px;color:#777;font-size:10px}
+@media(max-width:950px){.grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}.flag{font-size:52px;height:65px}.score{font-size:18px}}
+@media(max-width:700px){.grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:7px}.flag{font-size:44px;height:58px}.cell{padding:5px 3px 8px}.player{font-size:9px}}
+@media(max-width:500px){.title{padding-top:28px;font-size:31px}.target{right:10px}.gear{left:10px}.grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}.flag{font-size:39px;height:52px}.player{font-size:8px}.row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <main class="wrap">
-<section class="hero"><button class="gear" id="configure" title="Configure">⚙ Configure</button><div class="target">TARGET<b id="target">1000</b></div><div class="title">Which Country Will <span>WIN?</span></div><div class="bar"><i id="progress"></i></div><div class="status" id="status">Click Configure to connect YouTube Live</div></section>
+<section class="hero">
+<button class="gear" id="configure" title="Configure">⚙ Configure</button>
+<div class="target">TARGET<b id="target">1000</b></div>
+<div class="title">Which Country Will <span>WIN?</span></div>
+<div class="bar"><i id="progress"></i></div>
+<div class="status" id="status">Click Configure to connect YouTube Live</div>
+</section>
 <div class="flashBanner" id="banner"><span id="bannerText"></span></div>
 <section class="arena"><div class="grid" id="grid"></div></section>
 <div class="legend">Type a country name or flag in YouTube Live Chat. Every valid message scores instantly. Super Chat and Super Sticker give configurable bonus points.</div>
 </main>
-<div class="modal" id="modal"><div class="box"><h2>⚙ Configure YouTube Live</h2><p>Settings are stored only in this browser using localStorage.</p><label>YouTube Data API Key<input id="apiKey" type="password" autocomplete="off" placeholder="Paste your API key"></label><label>Live Video ID<input id="videoId" autocomplete="off" placeholder="Example: dQw4w9WgXcQ"></label><div class="row"><label>Target Score<input id="targetInput" type="number" min="1" value="1000"></label><label>Super Chat Points<input id="scPoints" type="number" min="1" value="10"></label></div><label>Super Sticker Points<input id="ssPoints" type="number" min="1" value="10"></label><div class="buttons"><button class="save" id="save">Save & Connect</button><button class="clear" id="clear">Clear Saved Settings</button><button class="close" id="close">Close</button></div><div class="note">For security, restrict the Google API key to this GitHub Pages origin and YouTube Data API v3.</div></div></div>
+
+<div class="modal" id="modal"><div class="box">
+<h2>⚙ Configure YouTube Live</h2><p>Settings are stored only in this browser using localStorage.</p>
+<label>YouTube Data API Key<input id="apiKey" type="password" autocomplete="off" placeholder="Paste your API key"></label>
+<label>Live Video ID<input id="videoId" autocomplete="off" placeholder="Example: dQw4w9WgXcQ"></label>
+<div class="row"><label>Target Score<input id="targetInput" type="number" min="1" value="1000"></label><label>Super Chat Points<input id="scPoints" type="number" min="1" value="10"></label></div>
+<label>Super Sticker Points<input id="ssPoints" type="number" min="1" value="10"></label>
+<div class="buttons"><button class="save" id="save">Save & Connect</button><button class="clear" id="clear">Clear Saved Settings</button><button class="close" id="close">Close</button></div>
+<div class="note">For security, restrict the Google API key to this GitHub Pages origin and YouTube Data API v3.</div>
+</div></div>
+
 <script>
 const codes='AF AL DZ AD AO AR AM AU AT AZ BS BH BD BB BY BE BZ BJ BT BO BW BR BN BG BI CV KH CM CA CF TD CL CN CO KM CG CD CR CI HR CU CY CZ DK DJ DM DO EC EG SV GQ ER EE SZ ET FJ FI FR GA GM GE DE GH GR GD GT GN GW GY HT HN HU IS IN ID IR IQ IE IL IT JM JP JO KZ KE KI KP KR KW KG LA LV LB LS LR LY LI LT LU MG MW MY MV ML MT MH MR MU MX FM MD MC MN ME MA MZ MM NA NR NP NL NZ NI NE NG MK NO OM PK PW PA PG PY PE PH PL PT QA RO RU RW KN LC VC WS SM ST SA SN RS SC SL SG SK SI SB SO ZA SS ES LK SD SR SE CH SY TW TJ TZ TH TL TG TO TT TN TR TM TV UG UA AE GB US UY UZ VU VA VE VN YE ZM ZW PS'.split(' ');
 const aliases={usa:'US',us:'US',america:'US',uk:'GB',britain:'GB',england:'GB',uae:'AE',holland:'NL',korea:'KR',turkiye:'TR','viet nam':'VN','czech republic':'CZ'};
 const flag=code=>[...code].map(c=>String.fromCodePoint(127397+c.charCodeAt())).join('');
-const display=new Intl.DisplayNames(['en'],{type:'region'});const countries=codes.map(code=>({code,name:display.of(code),flag:flag(code)}));
-const grid=document.querySelector('#grid'),statusEl=document.querySelector('#status'),progress=document.querySelector('#progress'),targetEl=document.querySelector('#target'),modal=document.querySelector('#modal'),banner=document.querySelector('#banner'),bannerText=document.querySelector('#bannerText');const $=id=>document.querySelector(id);
+const display=new Intl.DisplayNames(['en'],{type:'region'});
+const countries=codes.map(code=>({code,name:display.of(code),flag:flag(code)}));
+const grid=document.querySelector('#grid'),statusEl=document.querySelector('#status'),progress=document.querySelector('#progress'),targetEl=document.querySelector('#target'),modal=document.querySelector('#modal'),banner=document.querySelector('#banner'),bannerText=document.querySelector('#bannerText');
+const $=id=>document.querySelector(id);
 const K='ytcg_api_key',V='ytcg_video_id',T='ytcg_target',SC='ytcg_superchat_points',SS='ytcg_supersticker_points';
 let apiKey=localStorage.getItem(K)||'',videoId=localStorage.getItem(V)||'',target=+(localStorage.getItem(T)||1000),scPoints=+(localStorage.getItem(SC)||10),ssPoints=+(localStorage.getItem(SS)||10);
 let scores=new Map(countries.map(c=>[c.code,0])),lastPlayer=new Map(),playerTimers=new Map(),byName=new Map(countries.map(c=>[c.name.toLowerCase(),c])),byFlag=new Map(countries.map(c=>[c.flag,c]));
@@ -36,7 +96,8 @@ async function yt(path,params){const u=new URL('https://www.googleapis.com/youtu
 async function poll(){if(busy)return;busy=true;try{if(!apiKey||!videoId){statusEl.textContent='Configure API key and Live Video ID';return}const vd=await yt('videos',{part:'liveStreamingDetails',id:videoId});const id=vd.items?.[0]?.liveStreamingDetails?.activeLiveChatId;if(!id)throw Error('No active Live Chat found.');if(id!==chatId){chatId=id;pageToken=null;seen.clear()}const p={liveChatId:chatId,part:'snippet,authorDetails',maxResults:200};if(pageToken)p.pageToken=pageToken;const d=await yt('liveChat/messages',p);pageToken=d.nextPageToken||pageToken;pollMs=Math.max(1000,+(d.pollingIntervalMillis||5000));for(const item of d.items||[]){if(seen.has(item.id))continue;seen.add(item.id);const type=item.snippet?.type||'';const text=item.snippet?.displayMessage||item.snippet?.textMessageDetails?.messageText||item.snippet?.superChatDetails?.userComment||item.snippet?.superStickerDetails?.userComment||'';const c=detect(text);if(!c)continue;const points=type==='superChatEvent'?scPoints:type==='superStickerEvent'?ssPoints:1;const user=item.authorDetails?.displayName||'YouTube viewer';scores.set(c.code,(scores.get(c.code)||0)+points);showPlayerTemporarily(c.code,user);announce(user,c,points,type)}statusEl.textContent='● LIVE CHAT CONNECTED • '+new Date().toLocaleTimeString()}catch(e){statusEl.textContent='⚠ '+e.message}finally{busy=false;clearTimeout(timer);timer=setTimeout(poll,pollMs)}}
 $('#configure').onclick=()=>{fill();modal.classList.add('open')};$('#close').onclick=()=>modal.classList.remove('open');modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
 $('#save').onclick=()=>{apiKey=$('#apiKey').value.trim();videoId=$('#videoId').value.trim();target=Math.max(1,+$('#targetInput').value||1000);scPoints=Math.max(1,+$('#scPoints').value||10);ssPoints=Math.max(1,+$('#ssPoints').value||10);localStorage.setItem(K,apiKey);localStorage.setItem(V,videoId);localStorage.setItem(T,target);localStorage.setItem(SC,scPoints);localStorage.setItem(SS,ssPoints);targetEl.textContent=target;chatId=null;pageToken=null;modal.classList.remove('open');statusEl.textContent='Saved locally. Connecting…';poll()};
-$('#clear').onclick=()=>{[K,V,T,SC,SS].forEach(k=>localStorage.removeItem(k));apiKey='';videoId='';target=1000;scPoints=10;ssPoints=10;fill();statusEl.textContent='Saved settings cleared.'};render();if(apiKey&&videoId)poll();
+$('#clear').onclick=()=>{[K,V,T,SC,SS].forEach(k=>localStorage.removeItem(k));apiKey='';videoId='';target=1000;scPoints=10;ssPoints=10;fill();statusEl.textContent='Saved settings cleared.'};
+render();if(apiKey&&videoId)poll();
 </script>
 </body>
 </html>
