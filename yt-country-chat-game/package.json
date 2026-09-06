@@ -1,0 +1,20 @@
+{
+  "name": "yt-country-chat-game",
+  "version": "1.1.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "node --check server.js",
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": ["youtube", "live-chat", "country-game", "super-chat"],
+  "author": "",
+  "license": "ISC",
+  "description": "Real-time YouTube Live Chat country battle with Super Chat scoring",
+  "type": "module",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}
