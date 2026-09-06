@@ -1,11 +1,5 @@
 import type { AudioEngine } from './AudioEngine';
 
-/**
- * CC0 soundtrack fallback hosted by OpenGameArt.org.
- * "Space Music: Out There" by yd is explicitly marked CC0.
- */
-const CC0_SPACE_TRACK_URL = 'https://opengameart.org/sites/default/files/OutThere.ogg';
-
 /** Local soundtrack copied into the GitHub Pages artifact by the deploy workflow. */
 const REPO_TRACK_URL = `${import.meta.env.BASE_URL}Midnight_Highway_Run.mp3`;
 
