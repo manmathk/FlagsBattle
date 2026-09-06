@@ -7,23 +7,24 @@ Real-time YouTube Live Chat country battle based on the supplied visual. Viewers
 - Normal country/flag chat: **+1**
 - Super Chat containing a country/flag: **+10** by default
 - Super Sticker containing a country/flag: **+10** by default
-- Super Chat and Super Sticker values are configurable with `SUPERCHAT_POINTS` and `SUPERSTICKER_POINTS`.
+- The static browser version lets you change the Super Chat and Super Sticker bonuses in the setup panel.
+- The bonus is awarded only when the paid message/comment itself contains a recognized country or flag.
 
-The bonus is awarded only when the paid message/comment itself contains a recognized country or flag.
+## GitHub Pages / browser setup
 
-## Run
+The GitHub Pages version is at `public/yt-country-chat-game/index.html` and talks directly to the YouTube Data API from the browser.
 
-1. Enable YouTube Data API v3 and create an API key.
-2. Copy `.env.example` to `.env`.
-3. Set `YOUTUBE_API_KEY` and `YOUTUBE_VIDEO_ID`.
-4. Run `npm install`.
-5. Run `npm start`.
-6. Open `http://localhost:3000`.
+1. Enable YouTube Data API v3 in Google Cloud and create an API key.
+2. Open the game page.
+3. Paste the API key into **YouTube Data API Key**.
+4. Enter the live stream's **Video ID**.
+5. Set the target and paid-message bonuses if desired.
+6. Click **Save & Connect**.
 
-The server resolves the active live chat from `videos.list` and reads messages from `liveChatMessages.list`. YouTube exposes Super Chat details—including amount, currency, tier and the user's comment—on live chat messages, which this game uses to distinguish paid events from normal chat.
+The API key and settings are saved with `localStorage` in that browser only. Nothing is committed to this repository. For production use, restrict the API key by HTTP referrer to the GitHub Pages origin and restrict it to YouTube Data API v3.
 
-## Important
+The game uses `videos.list` to discover the active live-chat ID and `liveChatMessages.list` to read the live chat. It reads `authorDetails.displayName` so every scoring event shows the viewer's YouTube name in **Recent Players & Points**. Super Chat and Super Sticker event types receive their configured bonus.
 
-API credentials remain server-side. Do not put the API key in frontend JavaScript.
+## Local Node version
 
-For GitHub Pages, host only the frontend there and run this Node backend separately; GitHub Pages cannot securely perform the server-side YouTube chat polling.
+The original Node/Express implementation remains in this directory for server-side deployments. The GitHub Pages version does not require Node, `.env`, WebSockets, or a backend.
