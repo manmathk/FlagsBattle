@@ -111,7 +111,6 @@ const main = async (): Promise<void> => {
   hud.applyTheme(theme);
   const renderer = await Renderer.create(canvas, theme);
   const flagCodes = FLAGS.map((flag) => flag.code);
-  const flagNames = new Map(FLAGS.map((flag) => [flag.code, flag.name] as const));
   const loop = new GameLoop();
   const audio = new AudioEngine();
   const soundtrack = createSoundtrack(audio);
