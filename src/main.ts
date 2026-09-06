@@ -120,8 +120,6 @@ const main = async (): Promise<void> => {
   const winnerVoice = new WinnerVoice();
   let muted = preferences.muted;
 
-  const countryNameFromCode = (code: string): string => flagNames.get(code) ?? code.toUpperCase();
-
   const startAudioAfterGesture = (): void => {
     void audio.unlock().then(() => {
       audio.setMuted(muted);
