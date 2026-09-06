@@ -36,6 +36,10 @@ jobs:
       # toolchain — nothing native has to compile in CI.
       - run: npm run build
 
+      # The soundtrack is committed at the repository root. Copy it into the
+      # Pages artifact so the deployed app can load it locally (no CDN/CORS dependency).
+      - run: cp Midnight_Highway_Run.mp3 dist/Midnight_Highway_Run.mp3
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
