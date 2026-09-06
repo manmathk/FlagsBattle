@@ -1,16 +1,17 @@
 import type { AudioEngine } from './AudioEngine';
 
 /**
- * CC0 soundtrack hosted by OpenGameArt.org.
- * "Space Music: Out There" by yd is explicitly marked CC0 and is a 4-minute
- * background loop, making it a good fit for the spinning arena battle.
- * Source: https://opengameart.org/content/space-music-out-there
+ * CC0 soundtrack fallback hosted by OpenGameArt.org.
+ * "Space Music: Out There" by yd is explicitly marked CC0.
  */
 const CC0_SPACE_TRACK_URL = 'https://opengameart.org/sites/default/files/OutThere.ogg';
 
+/** The current background track committed at the repository root. */
+const REPO_TRACK_URL = 'https://cdn.jsdelivr.net/gh/manmathk/FlagsBattle@main/Midnight_Highway_Run.mp3';
+
 /**
- * A local track takes precedence when one is supplied under src/audio/tracks/.
- * Otherwise use the verified CC0 OpenGameArt track.
+ * A bundled/imported local track can be added under src/audio/tracks/ and will
+ * take precedence. The repository-root track is the default background score.
  */
 const TRACKS = import.meta.glob('./tracks/*.{mp3,ogg,m4a,wav}', {
   eager: true,
@@ -21,14 +22,15 @@ const TRACKS = import.meta.glob('./tracks/*.{mp3,ogg,m4a,wav}', {
 export const externalTrackUrl = (): string | null => {
   const paths = Object.keys(TRACKS).sort();
   const first = paths[0];
-  return first === undefined ? CC0_SPACE_TRACK_URL : (TRACKS[first] ?? CC0_SPACE_TRACK_URL);
+  return first === undefined ? REPO_TRACK_URL : (TRACKS[first] ?? REPO_TRACK_URL);
 };
 
 export class TrackMusic {
   readonly source = 'file' as const;
 
   private element: HTMLAudioElement | null = null;
-  private wired = false;
+  private sourceNode: MediaElementAudioSourceNode | null = null;
+  private gainNode: GainNode | null = null;
 
   constructor(
     private readonly engine: AudioEngine,
@@ -48,9 +50,12 @@ export class TrackMusic {
       this.element.crossOrigin = 'anonymous';
     }
 
-    if (!this.wired) {
-      ctx.createMediaElementSource(this.element).connect(out);
-      this.wired = true;
+    if (this.sourceNode === null) {
+      this.sourceNode = ctx.createMediaElementSource(this.element);
+      this.gainNode = ctx.createGain();
+      this.gainNode.gain.value = 0.3;
+      this.sourceNode.connect(this.gainNode);
+      this.gainNode.connect(out);
     }
 
     void this.element.play().catch(() => {
