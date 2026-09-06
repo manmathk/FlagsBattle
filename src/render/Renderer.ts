@@ -1,4 +1,4 @@
-import { Application, Container, Sprite, Texture } from 'pixi.js';
+import { Application, Container, Graphics, Sprite, Texture } from 'pixi.js';
 import type { World, WorldEvent } from '../core/World';
 import { SIM, STAGE } from '../config';
 import { ArenaRing } from './ArenaRing';
@@ -6,29 +6,22 @@ import { Effects } from './Effects';
 import { createGlowTexture, FlagTextures } from './FlagTextures';
 import type { Theme } from './themes';
 
-/** Breathing room around the arena, as a multiple of its diameter. */
 const ARENA_MARGIN = 1.08;
-
-export interface LayoutInset {
-  top: number;
-  bottom: number;
-}
-
+export interface LayoutInset { top: number; bottom: number; }
 const HALO_SCALE = 2.4;
 const HALO_ALPHA = 0.4;
 
-interface FlagView {
-  flag: Sprite;
-  halo: Sprite;
-}
+interface FlagView { flag: Sprite; halo: Sprite; }
 
 export class Renderer {
   private readonly root = new Container();
   private readonly ring = new ArenaRing();
+  private readonly obstacleLayer = new Container();
   private readonly haloLayer = new Container();
   private readonly flagLayer = new Container();
   private readonly effects: Effects;
   private readonly views = new Map<number, FlagView>();
+  private readonly obstacleViews = new Map<number, Graphics>();
   private elapsed = 0;
 
   private constructor(
@@ -39,23 +32,14 @@ export class Renderer {
   ) {
     this.effects = new Effects(glowTexture, theme);
     this.haloLayer.blendMode = 'add';
-    this.root.addChild(this.ring.view, this.haloLayer, this.flagLayer, this.effects.view);
+    this.root.addChild(this.ring.view, this.obstacleLayer, this.haloLayer, this.flagLayer, this.effects.view);
     this.app.stage.addChild(this.root);
     this.resize();
   }
 
   static async create(canvas: HTMLCanvasElement, theme: Theme): Promise<Renderer> {
     const app = new Application();
-    await app.init({
-      canvas,
-      backgroundAlpha: 0,
-      antialias: true,
-      resolution: Math.min(window.devicePixelRatio || 1, 2),
-      autoDensity: true,
-      resizeTo: window,
-      autoStart: false,
-    });
-
+    await app.init({ canvas, backgroundAlpha: 0, antialias: true, resolution: Math.min(window.devicePixelRatio || 1, 2), autoDensity: true, resizeTo: window, autoStart: false });
     const flagTextures = await FlagTextures.load();
     return new Renderer(app, flagTextures, createGlowTexture(), theme);
   }
@@ -69,11 +53,12 @@ export class Renderer {
   bindRound(world: World): void {
     this.flagLayer.removeChildren();
     this.haloLayer.removeChildren();
+    this.obstacleLayer.removeChildren();
     this.views.clear();
+    this.obstacleViews.clear();
     this.effects.clear();
 
     const size = world.bodyRadius * 2;
-
     for (const body of world.bodies) {
       const flag = new Sprite(this.flagTextures.get(body.flagCode));
       flag.anchor.set(0.5);
@@ -86,38 +71,48 @@ export class Renderer {
       halo.height = size * HALO_SCALE * 0.75;
       halo.alpha = HALO_ALPHA;
       halo.tint = this.theme.glow;
-
       this.haloLayer.addChild(halo);
       this.flagLayer.addChild(flag);
       this.views.set(body.id, { flag, halo });
+    }
+
+    for (const obstacle of world.obstacles) {
+      const graphic = new Graphics();
+      graphic.circle(0, 0, obstacle.radius).fill({ color: 0x182338, alpha: 0.95 }).stroke({ color: 0x8aa4c7, width: Math.max(3, obstacle.radius * 0.12), alpha: 0.9 });
+      this.obstacleLayer.addChild(graphic);
+      this.obstacleViews.set(obstacle.id, graphic);
     }
   }
 
   frame(world: World, alpha: number, dt: number, events: readonly WorldEvent[]): void {
     this.elapsed += dt;
-
     this.ring.update(world.arena, this.theme);
     this.effects.consume(events, STAGE.height);
     this.effects.update(dt);
 
-    const pulse = 0.6 + 0.4 * Math.sin(this.elapsed * 22);
+    for (const obstacle of world.obstacles) {
+      const view = this.obstacleViews.get(obstacle.id);
+      if (view === undefined) continue;
+      const safeRadius = obstacle.radius + world.bodyRadius;
+      const active = Math.hypot(obstacle.offset.x, obstacle.offset.y) + safeRadius <= world.arena.radius - world.bodyRadius;
+      view.visible = active;
+      view.position.set(world.arena.center.x + obstacle.offset.x, world.arena.center.y + obstacle.offset.y);
+    }
 
+    const pulse = 0.6 + 0.4 * Math.sin(this.elapsed * 22);
     for (const body of world.bodies) {
       const view = this.views.get(body.id);
       if (view === undefined) continue;
-
       if (body.state === 'eliminated') {
         view.flag.visible = false;
         view.halo.visible = false;
         continue;
       }
-
       const x = body.prevPos.x + (body.pos.x - body.prevPos.x) * alpha;
       const y = body.prevPos.y + (body.pos.y - body.prevPos.y) * alpha;
       view.flag.position.set(x, y);
       view.flag.rotation = body.angle;
       view.halo.position.set(x, y);
-
       if (body.targeted) {
         view.halo.tint = 0xffffff;
         view.halo.alpha = pulse;
@@ -126,25 +121,18 @@ export class Renderer {
         view.halo.alpha = HALO_ALPHA;
       }
     }
-
     this.app.render();
   }
 
-  /** Fit the arena into the HUD-safe viewport without letting the mobile circle clip. */
   resize(inset: LayoutInset = { top: 0, bottom: 0 }): void {
     const width = window.innerWidth;
     const height = window.innerHeight;
     const portrait = height > width;
-
-    // Keep a little extra horizontal breathing room on phones because the
-    // arena ring and glow extend beyond the simulation radius visually.
     const horizontalPadding = portrait ? 20 : 24;
     const availableWidth = Math.max(120, width - horizontalPadding * 2);
     const availableHeight = Math.max(120, height - inset.top - inset.bottom);
-
     const span = SIM.arenaRadius * 2 * ARENA_MARGIN;
     const fitScale = Math.min(availableWidth, availableHeight) / span;
-
     this.root.scale.set(fitScale);
     this.root.position.set(width / 2, inset.top + availableHeight / 2);
   }
