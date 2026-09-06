@@ -6,12 +6,12 @@ import type { AudioEngine } from './AudioEngine';
  */
 const CC0_SPACE_TRACK_URL = 'https://opengameart.org/sites/default/files/OutThere.ogg';
 
-/** The current background track committed at the repository root. */
-const REPO_TRACK_URL = 'https://cdn.jsdelivr.net/gh/manmathk/FlagsBattle@main/Midnight_Highway_Run.mp3';
+/** Local soundtrack copied into the GitHub Pages artifact by the deploy workflow. */
+const REPO_TRACK_URL = `${import.meta.env.BASE_URL}Midnight_Highway_Run.mp3`;
 
 /**
  * A bundled/imported local track can be added under src/audio/tracks/ and will
- * take precedence. The repository-root track is the default background score.
+ * take precedence. Otherwise use the repository-root soundtrack copied into dist.
  */
 const TRACKS = import.meta.glob('./tracks/*.{mp3,ogg,m4a,wav}', {
   eager: true,
@@ -47,7 +47,7 @@ export class TrackMusic {
     if (this.element === null) {
       this.element = new Audio(this.url);
       this.element.loop = true;
-      this.element.crossOrigin = 'anonymous';
+      this.element.preload = 'auto';
     }
 
     if (this.sourceNode === null) {
