@@ -44,11 +44,7 @@ class WinnerVoice {
     window.speechSynthesis.addEventListener('voiceschanged', chooseVoice);
   }
 
-  /**
-   * IMPORTANT: call this directly from a real user interaction on iOS Safari.
-   * We intentionally make a real, audible announcement here instead of a
-   * zero-volume/silent utterance, because Safari can reject silent priming.
-   */
+  /** Enable voice from a real user gesture. */
   enableFromUserGesture(): void {
     if (!('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
 
@@ -62,11 +58,24 @@ class WinnerVoice {
     utterance.pitch = 1;
     utterance.volume = 1;
     if (this.selectedVoice) utterance.voice = this.selectedVoice;
+    synth.cancel();
     synth.speak(utterance);
+  }
+
+  disable(): void {
+    this.enabled = false;
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
   }
 
   isEnabled(): boolean {
     return this.enabled;
+  }
+
+  toggleFromUserGesture(): void {
+    if (this.enabled) this.disable();
+    else this.enableFromUserGesture();
   }
 
   speakElimination(country: string): void {
@@ -95,8 +104,6 @@ class WinnerVoice {
     utterance.volume = 1;
     if (this.selectedVoice) utterance.voice = this.selectedVoice;
 
-    // Do not call cancel() here. On Safari that can race with a newly queued
-    // utterance and cause an announcement to disappear.
     synth.speak(utterance);
   }
 }
@@ -123,12 +130,21 @@ const main = async (): Promise<void> => {
 
   const countryNameFromCode = (code: string): string => flagNames.get(code) ?? code.toUpperCase();
 
+  const applySoundState = (): void => {
+    controls.setMuted(muted);
+    void audio.unlock().then(() => {
+      audio.setMuted(muted);
+      if (muted) soundtrack.stop();
+      else soundtrack.start();
+    });
+  };
+
   const layoutArena = (): void => {
     const strip = document.getElementById('results')?.getBoundingClientRect();
-    const controls = document.getElementById('controls')?.getBoundingClientRect();
+    const controlsBox = document.getElementById('controls')?.getBoundingClientRect();
     renderer.resize({
       top: (strip?.bottom ?? 0) + 12,
-      bottom: controls === undefined ? 0 : window.innerHeight - controls.top + 12,
+      bottom: controlsBox === undefined ? 0 : window.innerHeight - controlsBox.top + 12,
     });
   };
 
@@ -160,30 +176,33 @@ const main = async (): Promise<void> => {
     },
   });
 
-  const controls = new Controls(
+  let controls: Controls;
+  controls = new Controls(
     {
       onTogglePlay: () => {
-        if (!winnerVoice.isEnabled()) winnerVoice.enableFromUserGesture();
         loop.toggle();
         controls.setPlaying(loop.running);
+        if (loop.running && !muted) applySoundState();
       },
       onReset: () => { loop.reset(); match.reset(); },
       onToggleSound: () => {
-        if (!winnerVoice.isEnabled()) winnerVoice.enableFromUserGesture();
         muted = !muted;
         controls.setMuted(muted);
         savePreferences(storage, { modeId: match.mode.id, themeId: theme.id, muted });
         void audio.unlock().then(() => {
           audio.setMuted(muted);
-          if (muted) soundtrack.stop(); else soundtrack.start();
+          if (muted) soundtrack.stop();
+          else soundtrack.start();
         });
       },
       onVoiceEnable: () => {
-        winnerVoice.enableFromUserGesture();
+        winnerVoice.toggleFromUserGesture();
         const voice = document.getElementById('voice');
         if (voice instanceof HTMLButtonElement) {
-          voice.textContent = '🔊 Voice ON';
-          voice.setAttribute('aria-label', 'Voice announcements enabled');
+          const enabled = winnerVoice.isEnabled();
+          voice.textContent = enabled ? '🔊 Voice ON' : '🔇 Voice OFF';
+          voice.setAttribute('aria-label', enabled ? 'Disable voice announcements' : 'Enable voice announcements');
+          voice.setAttribute('aria-pressed', String(enabled));
         }
       },
       onModeChange: (modeId) => { match.setMode(modeId); savePreferences(storage, { modeId, themeId: theme.id, muted }); },
@@ -217,7 +236,6 @@ const main = async (): Promise<void> => {
           if (body !== undefined) {
             const country = countryNameFromCode(body.flagCode);
             hud.showElimination(body.flagCode);
-            // Schedule speech after the popup has been committed to the HUD.
             window.requestAnimationFrame(() => winnerVoice.speakElimination(country));
           }
           break;
@@ -231,6 +249,10 @@ const main = async (): Promise<void> => {
     renderer.frame(world, loop.alpha, dt, events);
     hud.setAlive(world.aliveCount, world.bodies.length);
   };
+
+  // Apply the persisted sound preference once the controls and audio objects exist.
+  // No playback is forced here; browsers require a user gesture for audio.
+  controls.setMuted(muted);
 
   if (import.meta.env.DEV) {
     Object.assign(window, {
