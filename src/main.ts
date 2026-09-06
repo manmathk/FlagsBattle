@@ -19,6 +19,7 @@ const safeStorage = (): Storage | undefined => {
 };
 
 const MAX_FRAME_DT = 0.25;
+const ELIMINATION_VOICE_DELAY_MS = 450;
 const SOUND_LIMITS = {
   impact: { maxPerFrame: 3, cooldownMs: 45 },
   elimination: { maxPerFrame: 2, cooldownMs: 30 },
@@ -214,7 +215,11 @@ const main = async (): Promise<void> => {
         case 'eliminated': {
           if (budget.allow('elimination')) sfx.elimination();
           const body = world.bodies[event.bodyId];
-          if (body !== undefined) winnerVoice.speakElimination(countryNameFromCode(body.flagCode));
+          if (body !== undefined) {
+            const country = countryNameFromCode(body.flagCode);
+            // Let the renderer show the elimination first, then announce it.
+            window.setTimeout(() => winnerVoice.speakElimination(country), ELIMINATION_VOICE_DELAY_MS);
+          }
           break;
         }
         case 'collision':
