@@ -66,9 +66,7 @@ class WinnerVoice {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   }
 
-  isEnabled(): boolean {
-    return this.enabled;
-  }
+  isEnabled(): boolean { return this.enabled; }
 
   toggleFromUserGesture(): void {
     if (this.enabled) this.disable();
@@ -88,14 +86,12 @@ class WinnerVoice {
   private queue(text: string, champion: boolean): void {
     const synth = window.speechSynthesis;
     synth.resume();
-
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'en-US';
     utterance.rate = champion ? 0.9 : 1;
     utterance.pitch = champion ? 1.05 : 1;
     utterance.volume = 1;
     if (this.selectedVoice) utterance.voice = this.selectedVoice;
-
     synth.speak(utterance);
   }
 }
@@ -143,14 +139,12 @@ const main = async (): Promise<void> => {
       hud.setMode(MODE_LABELS[round.mode.id]);
       hud.showSeries(round.mode.usesSeries);
       hud.setSeries(series.standings(), SERIES_TARGET);
-      hud.setLastWinner(leaderboard.lastWinner);
       hud.setTopFive(leaderboard.top(5), leaderboard.roundsPlayed);
       layoutArena();
     },
     onRoundEnd: ({ winnerCode, isChampion }, series, leaderboard) => {
       sfx.winner(isChampion);
       hud.setSeries(series.standings(), SERIES_TARGET);
-      hud.setLastWinner(leaderboard.lastWinner);
       hud.setTopFive(leaderboard.top(5), leaderboard.roundsPlayed);
       if (isChampion) winnerVoice.speakChampion(hud.countryName(winnerCode));
       else winnerVoice.speakRoundWinner(hud.countryName(winnerCode), leaderboard.roundsPlayed);
