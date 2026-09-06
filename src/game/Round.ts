@@ -2,7 +2,7 @@ import { Arena } from '../core/Arena';
 import { createBody, type Body } from '../core/Body';
 import { Rng } from '../core/Rng';
 import { fromAngle, vec, type Vec2 } from '../core/Vec2';
-import { World } from '../core/World';
+import { World, type Obstacle } from '../core/World';
 import { bodyRadiusFor, CONTACT, ORBIT, SIM } from '../config';
 import type { GameMode, ModeContext } from '../modes/GameMode';
 import { spawnPositions } from './spawn';
@@ -11,12 +11,21 @@ export type RoundStatus = 'running' | 'resolved';
 
 export interface RoundOptions {
   mode: GameMode;
-  /** One entry per flag entering the arena. */
   flagCodes: readonly string[];
   seed: number;
-  /** Optional arena radius override, primarily useful for deterministic tests. */
   arenaRadius?: number;
 }
+
+const createObstacles = (arenaRadius: number): readonly Obstacle[] => {
+  const ringRadius = arenaRadius * 0.47;
+  return [
+    { id: 0, offset: vec(0, 0), radius: arenaRadius * 0.09 },
+    { id: 1, offset: fromAngle(0, ringRadius), radius: arenaRadius * 0.055 },
+    { id: 2, offset: fromAngle(Math.PI / 2, ringRadius), radius: arenaRadius * 0.055 },
+    { id: 3, offset: fromAngle(Math.PI, ringRadius), radius: arenaRadius * 0.055 },
+    { id: 4, offset: fromAngle((Math.PI * 3) / 2, ringRadius), radius: arenaRadius * 0.055 },
+  ];
+};
 
 export class Round {
   readonly world: World;
@@ -40,13 +49,7 @@ export class Round {
     const bodyRadius = bodyRadiusFor(count, arenaRadius);
     const positions = spawnPositions(count, arenaRadius, bodyRadius, this.rng);
     const bodies = positions.map((pos, i) =>
-      createBody(
-        i,
-        options.flagCodes[i]!,
-        pos,
-        this.tangentialVelocity(pos),
-        this.rng.range(0, Math.PI * 2),
-      ),
+      createBody(i, options.flagCodes[i]!, pos, this.tangentialVelocity(pos), this.rng.range(0, Math.PI * 2)),
     );
 
     this.world = new World({
@@ -58,6 +61,7 @@ export class Round {
       friction: CONTACT.friction,
       angularRetain: CONTACT.angularRetain,
       maxAngularVel: CONTACT.maxAngularVel,
+      obstacles: createObstacles(arenaRadius),
     });
 
     this.mode.onRoundStart(this.context());
@@ -86,9 +90,7 @@ export class Round {
     return vec(-outY * speed * ORBIT.direction, outX * speed * ORBIT.direction);
   }
 
-  private context(): ModeContext {
-    return { world: this.world, rng: this.rng, t: this.elapsed, suddenDeath: this.suddenDeath };
-  }
+  private context(): ModeContext { return { world: this.world, rng: this.rng, t: this.elapsed, suddenDeath: this.suddenDeath }; }
 
   private resolve(): void {
     this.status = 'resolved';
@@ -100,11 +102,7 @@ export class Round {
     let best: Body | null = null;
     for (const body of this.world.bodies) {
       if (body.eliminatedAtStep < 0) continue;
-      if (
-        best === null ||
-        body.eliminatedAtStep > best.eliminatedAtStep ||
-        (body.eliminatedAtStep === best.eliminatedAtStep && body.id < best.id)
-      ) best = body;
+      if (best === null || body.eliminatedAtStep > best.eliminatedAtStep || (body.eliminatedAtStep === best.eliminatedAtStep && body.id < best.id)) best = body;
     }
     return best;
   }
