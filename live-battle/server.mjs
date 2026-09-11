@@ -143,7 +143,7 @@ function acceptVote(country, voterId, source = 'youtube', points = COMMENT_POINT
   }
   state.scores[country.code] = (state.scores[country.code] || 0) + points;
   state.totalPoints += points;
-  if (source === 'youtube') state.totalVotes += 1;
+  if (source === 'youtube' && points < PAID_POINTS) state.totalVotes += 1;
   state.acceptedVotes += 1;
   const event = {
     id: meta.id || crypto.randomUUID(),
@@ -192,41 +192,24 @@ async function findLiveChatId(youtube) {
   lastDiscoveryAt = Date.now();
   const fields = 'items(id,snippet(liveChatId),status(lifeCycleStatus))';
   if (process.env.YOUTUBE_BROADCAST_ID) {
-    const response = await youtube.liveBroadcasts.list({
-      part: 'id,snippet,status',
-      id: [process.env.YOUTUBE_BROADCAST_ID],
-      fields
-    });
+    const response = await youtube.liveBroadcasts.list({ part: 'id,snippet,status', id: [process.env.YOUTUBE_BROADCAST_ID], fields });
     const broadcast = response.data.items?.[0];
     if (!broadcast) throw new Error('Configured YOUTUBE_BROADCAST_ID was not found.');
     if (broadcast.status?.lifeCycleStatus !== 'live') return null;
     if (!broadcast.snippet?.liveChatId) return null;
     return { broadcastId: broadcast.id, liveChatId: broadcast.snippet.liveChatId };
   }
-  const response = await youtube.liveBroadcasts.list({
-    part: 'id,snippet,status',
-    mine: true,
-    broadcastStatus: 'active',
-    maxResults: 5,
-    fields
-  });
+  const response = await youtube.liveBroadcasts.list({ part: 'id,snippet,status', mine: true, broadcastStatus: 'active', maxResults: 5, fields });
   const live = (response.data.items || []).find((broadcast) => broadcast.status?.lifeCycleStatus === 'live' && broadcast.snippet?.liveChatId);
   return live ? { broadcastId: live.id, liveChatId: live.snippet.liveChatId } : null;
 }
 
-function messageUser(item) {
-  return item.authorDetails?.displayName || 'Viewer';
-}
-
-function messageVoterId(item) {
-  return item.authorDetails?.channelId || item.snippet?.authorChannelId || item.id;
-}
-
+function messageUser(item) { return item.authorDetails?.displayName || 'Viewer'; }
+function messageVoterId(item) { return item.authorDetails?.channelId || item.snippet?.authorChannelId || item.id; }
 function messageText(item) {
   const snippet = item.snippet || {};
   return snippet.textMessageDetails?.messageText || snippet.displayMessage || '';
 }
-
 function countryForPaidEvent(item, voterId) {
   const snippet = item.snippet || {};
   const candidateText = snippet.superChatDetails?.userComment || snippet.displayMessage || '';
