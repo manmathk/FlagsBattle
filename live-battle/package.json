@@ -1,13 +1,16 @@
 {
   "name": "flagsbattle-live-country-battle",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.mjs",
-    "dev": "node --watch server.mjs"
+    "start": "node server-stream.mjs",
+    "dev": "node --watch server-stream.mjs",
+    "check": "node --check server-stream.mjs"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.0",
+    "@grpc/proto-loader": "^0.8.0",
     "dotenv": "^16.6.1",
     "express": "^5.1.0",
     "googleapis": "^157.0.0",
