@@ -12,13 +12,12 @@ A broadcast-first YouTube Live overlay where viewers vote for their country in c
 - Gift senders shown in a **Special Thanks** strip
 - Paid-event ticker such as `@Viewer boosted Nepal!`
 - Server-side YouTube OAuth
-- One accepted comment vote per viewer per configurable cooldown
 - Duplicate-event protection, including YouTube gift combo updates
 - Persistent score snapshots in `data/scores.json`
-- Socket.IO real-time updates
-- Overtake/score animations and voice announcements
+- Socket.IO real-time updates with short server-side batching
 - `?demo=1` local demo controls
 - OAuth helper that prints a refresh token after authorization
+- **YouTube `liveChatMessages.streamList` over gRPC** for persistent, push-based chat delivery
 
 ## Local demo
 
@@ -40,25 +39,25 @@ Open `http://localhost:8787/?demo=1` and click countries to simulate chat votes.
 5. Start the server and open `http://localhost:8787/oauth2/start`.
 6. Complete Google authorization and copy the returned refresh token into `YOUTUBE_REFRESH_TOKEN`.
 7. Restart the server.
-8. Start your YouTube live broadcast. The server discovers an active broadcast and caches its live-chat ID.
+8. Start your YouTube live broadcast. The server discovers an active broadcast and opens one persistent `streamList` connection.
 9. For the lowest discovery traffic, set `YOUTUBE_BROADCAST_ID` to the current broadcast ID.
 
 For production, set `PUBLIC_URL` to the HTTPS server URL and register `${PUBLIC_URL}/oauth2/callback` in Google Cloud. Never put OAuth secrets in frontend code or a public repository.
 
-## YouTube quota protection
+## Quota-efficient architecture
 
-The chat reader deliberately does **not** poll on a fixed 1–5 second timer. It honors YouTube's returned `pollingIntervalMillis` and applies a configurable minimum delay. The default `YOUTUBE_MIN_POLL_MS=10000` caps the theoretical chat polling rate at about 8,640 requests/day for a continuously live 24-hour stream, before discovery calls.
+The live-chat worker now uses Google's documented **server-streaming `liveChatMessages.streamList` gRPC method** instead of repeatedly calling `liveChatMessages.list`. YouTube pushes chat responses over a long-lived HTTP/2 connection, so the game no longer spends a quota request every few seconds just to ask whether a new comment exists. Google documents `streamList` as the low-latency streaming approach and provides the `stream_list.proto` definition used by this project.
 
-Additional protections:
+The remaining YouTube Data API traffic is intentionally low frequency:
 
-- live-broadcast discovery is cached and defaults to once every 60 seconds when no chat is active
-- the live broadcast is not re-discovered while its chat is active
-- API errors use exponential backoff up to 5 minutes
-- `fields` requests only the message properties the game needs, reducing response bandwidth
-- duplicate chat messages are ignored
-- gift combo IDs are tracked so a growing combo only awards the newly added gifts
+- active broadcast discovery is cached for `YOUTUBE_DISCOVERY_MS` (default 60 seconds)
+- setting `YOUTUBE_BROADCAST_ID` avoids broad `mine=true` discovery
+- the gRPC stream reconnects with exponential backoff after transient failures
+- the last `nextPageToken` is reused when reconnecting so messages are not unnecessarily replayed
+- message IDs and gift combo counts are deduplicated in memory
+- Socket.IO state snapshots are batched for 50ms during message bursts
 
-YouTube's current API documentation recommends `liveChatMessages.streamList` for the most efficient low-latency chat consumption. The current Node implementation keeps the simpler REST polling path for deployment portability, while using the server-provided polling interval and a quota-safe floor. If we later move the worker to a gRPC-capable runtime, `streamList` is the next upgrade.
+There is **no fixed live-chat polling timer** in the active server.
 
 ## OBS
 
@@ -70,19 +69,30 @@ Examples: `India`, `IN`, `77`, `Bharat`, `USA`, `UK`, `Brasil`, `Deutschland`, `
 
 ## Paid boosts
 
-A viewer should first choose a country with a normal chat message. Their later Super Chat, Super Sticker, YouTube Gift, or membership gift then boosts that last selected country. A Super Chat/Super Sticker can also include the country directly in its message.
+A viewer should first choose a country with a normal chat message. Their later Super Chat, Super Sticker, YouTube Gift, or membership gift then boosts that last selected country. A Super Chat can also include the country directly in its message.
 
 Configure point values with:
 
 ```env
 COMMENT_POINTS=1
 PAID_POINTS=1000
-YOUTUBE_MIN_POLL_MS=10000
 YOUTUBE_DISCOVERY_MS=60000
 ```
 
 ## Architecture
 
 ```text
-YouTube Live Chat → Node + YouTube Data API → parser / anti-spam / paid boosts → score state → Socket.IO → OBS Browser Source → YouTube Live
+YouTube Live Chat
+       │
+       ▼
+streamList gRPC (one persistent connection)
+       │
+       ▼
+parser → dedupe/anti-spam → paid boosts → score state
+       │
+       ▼
+Socket.IO (batched state + instant events)
+       │
+       ▼
+OBS Browser Source
 ```
