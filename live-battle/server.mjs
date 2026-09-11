@@ -286,6 +286,7 @@ async function pollYoutube() {
   let liveChatId = null;
   let broadcastId = null;
   let backoffMs = 0;
+  let chatStartedAt = null;
 
   while (!youtubeStopRequested) {
     try {
@@ -310,6 +311,7 @@ async function pollYoutube() {
         liveChatId = live.liveChatId;
         broadcastId = live.broadcastId;
         pageToken = undefined;
+        chatStartedAt = new Date().toISOString();
         backoffMs = 0;
       }
 
@@ -327,7 +329,10 @@ async function pollYoutube() {
       state.youtube.liveChatId = liveChatId;
       state.youtube.lastError = null;
       state.youtube.lastMessageAt = new Date().toISOString();
-      for (const item of response.data.items || []) processYoutubeMessage(item);
+      for (const item of response.data.items || []) {
+        if (chatStartedAt && item.snippet?.publishedAt && item.snippet.publishedAt < chatStartedAt && !pageToken) continue;
+        processYoutubeMessage(item);
+      }
       pageToken = response.data.nextPageToken;
       const serverPollMs = Number(response.data.pollingIntervalMillis || 5000);
       const wait = Math.max(MIN_POLL_MS, serverPollMs);
@@ -344,6 +349,7 @@ async function pollYoutube() {
         liveChatId = null;
         broadcastId = null;
         pageToken = undefined;
+        chatStartedAt = null;
         state.youtube.connected = true;
         state.youtube.live = false;
         state.youtube.broadcastId = null;
