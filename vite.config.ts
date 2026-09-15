@@ -9,6 +9,7 @@ export default defineConfig({
       input: {
         main: 'index.html',
         gravityBattle: 'gravity-battle.html',
+        bombArena: 'bomb-arena.html',
       },
     },
   },
