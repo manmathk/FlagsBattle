@@ -11,6 +11,7 @@ export default defineConfig({
         gravityBattle: 'gravity-battle.html',
         bombArena: 'bomb-arena.html',
         bombArenaTop50: 'bomb-arena-top50.html',
+        guessTheFlag100: 'guess-the-flag-100.html',
       },
     },
   },
